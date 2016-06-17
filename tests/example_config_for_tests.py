@@ -7,3 +7,5 @@ import getpass
 
 POSTGRES_DBNAME='iot'
 POSTGRES_USER=getpass.getuser()
+
+MQTT_BROKER_AVAILABLE=True

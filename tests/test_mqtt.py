@@ -14,10 +14,17 @@ from utils import make_test_sensor_from_vallist, ValidationSubscriber
 
 try:
     import paho.mqtt
-    MQTT_AVAILABLE = True
+    MQTT_CLIENT_AVAILABLE = True
 except ImportError:
-    MQTT_AVAILABLE = False
-    
+    MQTT_CLIENT_AVAILABLE = False
+
+try:
+    from config_for_tests import MQTT_BROKER_AVAILABLE
+except ImportError:
+    MQTT_BROKER_AVAILABLE = False
+
+
+MQTT_AVAILABLE = MQTT_CLIENT_AVAILABLE and MQTT_BROKER_AVAILABLE
 
 import asyncio
 
