@@ -522,9 +522,9 @@ There are two reasons I can think of for ``on_error``:
    case where we have an intermittent error (e.g. a connection to a sensor node
    is lost, but we will keep retrying the connection).
 
- In general, error handling needs more experience and thought.
+In general, error handling needs more experience and thought.
 
- Bias: **Change, but not sure what to**
+Bias: **Change, but not sure what to**
 
 
 Related Work
