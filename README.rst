@@ -150,14 +150,15 @@ through three methods on the subscriber:
 
 Implementing a Publisher
 ~~~~~~~~~~~~~~~~~~~~~~~~
-When implmenting a publisher, one subsclasses from ``antevents.base.Publisher``.
+When implmenting a publisher, one subclasses from ``antevents.base.Publisher``.
 To emit a new event, the subclass calls the ``_dispatch_next`` method with the
 event and topic name. To signal an error or completion of the event stream,
-once calls ``_dispatch_error`` or ``_dispatch_completed``, respectively. The base
-class implementation of these methods is responsible for calling the ``on_next``,
-``on_error``, and ``on_completed`` methods for each of the subscribers.
+once calls ``_dispatch_error`` or ``_dispatch_completed``, respectively. The
+base class implementation of these methods are responsible for calling the
+``on_next``, ``on_error``, and ``on_completed`` methods for each of the
+subscribers.
 
-The code to call these ``_dispatch`` methods goes in a well-known method to be
+The code to call these ``_dispatch`` methods goes into a well-known method to be
 called by the scheduler. The specific method depends on whether the code to
 capture events must be run in a separate thread (blocking). There are three
 cases supported by Ant Events and three associated mixin-classes that define
