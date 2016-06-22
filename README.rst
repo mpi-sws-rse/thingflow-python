@@ -98,6 +98,8 @@ directory) is as follows:
 + `tests/` - the tests. These can be run in-place.
 + `examples/` - examples and other documentation.
 
+  + `examples/notebooks` - examples that use Jupyter
+
 
 .. _Linq: https://en.wikipedia.org/wiki/Language_Integrated_Query
 
@@ -141,10 +143,10 @@ publisher to the default topic of the subscriber::
 Once connected through the subscribe call, a publisher and subscriber interact
 through three methods on the subscriber:
 
- * `on_next`, which passes the next event in the stream to the subscriber.
- * `on_error`, which should be called at most once, if a fatal error occurs. The
-   exception that caused the error is passed as the parameter.
- * `on_completed`, which signals the end of the stream and takes no parameters.
+* `on_next`, which passes the next event in the stream to the subscriber.
+* `on_error`, which should be called at most once, if a fatal error occurs. The
+  exception that caused the error is passed as the parameter.
+* `on_completed`, which signals the end of the stream and takes no parameters.
 
 Implementing a Publisher
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,14 +163,14 @@ capture events must be run in a separate thread (blocking). There are three
 cases supported by Ant Events and three associated mixin-classes that define
 the methods:
 
- 1. `DirectPublisherMixin` defines an `_observe` method that can be called
-    directly by the scheduler in the main thread.
- 2. `IndirectPublisherMixin` defines an `_observe_and_equeue` method that can
-    will be called from a dedicated thread. The subscribers are then called
-    in the main thread.
- 3. `EventLoopPublisherMixin` is used for a publisher that has its own separate
-    event loop. This is run in a separate thread and the subscribers called
-    in the main thread.
+1. `DirectPublisherMixin` defines an `_observe` method that can be called
+   directly by the scheduler in the main thread.
+2. `IndirectPublisherMixin` defines an `_observe_and_equeue` method that can
+   will be called from a dedicated thread. The subscribers are then called
+   in the main thread.
+3. `EventLoopPublisherMixin` is used for a publisher that has its own separate
+   event loop. This is run in a separate thread and the subscribers called
+   in the main thread.
 
 OK, with all that out of the way, let us define a simple sensor. Sensors are
 publishers and thus inherit from the `Publisher` class. We also inherit from
