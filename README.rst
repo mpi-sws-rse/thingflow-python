@@ -84,19 +84,19 @@ Directory Layout
 The layout of the files in the Ant Events code repository (the `antevents-python`
 directory) is as follows:
 
-  + `README.RST` - this file, top level documentation
-  + `Makefile` - builds the source distribution and documentation; can run the tests
-  + `setup.py` - used to install the core code into a python environment
-  + `antevents/` - the core code. This is all that will get installed in a
-    production system
++ `README.RST` - this file, top level documentation
++ `Makefile` - builds the source distribution and documentation; can run the tests
++ `setup.py` - used to install the core code into a python environment
++ `antevents/` - the core code. This is all that will get installed in a
+  production system
 
-    + `antevents/base.py` - the core definitions and base classes of antevents
-    + `antevents/adapters` - reader and writer elements that talk to the outside world
-    + `antevents/linq` - elements for filter pipelines, in the style of
-      Microsoft's Linq_ framework
+  + `antevents/base.py` - the core definitions and base classes of antevents
+  + `antevents/adapters` - reader and writer elements that talk to the outside world
+  + `antevents/linq` - elements for filter pipelines, in the style of
+    Microsoft's Linq_ framework
       
-  + `tests/` - the tests. These can be run in-place.
-  + `examples/` - examples and other documentation.
++ `tests/` - the tests. These can be run in-place.
++ `examples/` - examples and other documentation.
 
 
 .. _Linq: https://en.wikipedia.org/wiki/Language_Integrated_Query
