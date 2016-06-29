@@ -16,16 +16,15 @@ import os.path
 import time
 
 try:
-    import antevents_upython
+    from antevents import *
 except ImportError:
     sys.path.append(os.path.abspath('../'))
-    import antevents_upython
+    from antevents import *
+
 
 import unittest
 
-from antevents_upython.base import *
-from antevents_upython.utils import get_logger, initialize_logging, close_logging
-from antevents_upython.mqtt_writer import MQTTWriter
+from mqtt_writer import MQTTWriter
 
 class DummySensor(object):
     def __init__(self, value_stream, sample_time=0):
@@ -48,7 +47,7 @@ class DummySensor(object):
     def __str__(self):
         return 'DummySensor'
 
-class ValidationSubscriber(DefaultSubscriber):
+class ValidationSubscriber:
     """Compare the values in a event stream to the expected values.
     Use the test_case for the assertions (for proper error reporting in a unit
     test).
@@ -82,18 +81,37 @@ class ValidationSubscriber(DefaultSubscriber):
         tc.assertTrue(False,
                       "Got an unexpected on_error call with parameter: %s" % exc)
 
-        
-class TestEndToEnd(unittest.TestCase):
-    def tearDown(self):
-        close_logging()
-        for f in ['test.log', 'test.log.1']:
-            if os.path.exists(f):
-                os.remove(f)
+class SensorPublisher(Publisher):
+    """Publish values sampled from a sensor. A value is obtained
+    by calling the sensor's sample() method. We wrap the value in
+    a SensorEvent.
+    """
+    __slots__ = ('sensor', 'sensor_id')
+    def __init__(self, sensor, sensor_id):
+        super().__init__()
+        self.sensor = sensor
+        self.sensor_id = sensor_id
 
-    def setUp(self):
-        # some of the code may call the logger
-        initialize_logging('test.log', interactive=True)
-            
+    def _observe(self):
+        try:
+            val = self.sensor.sample()
+            self._dispatch_next(SensorEvent(self.sensor_id, time.time(), val))
+            return True
+        except FatalError:
+            raise
+        except StopSensor:
+            self._dispatch_completed()
+            return False
+        except Exception as e:
+            self._dispatch_error(e)
+            return False
+
+    def __repr__(self):
+        return "SensorPublisher(sensor=%s, sensor_id=%s)" % \
+            (self.sensor, self.sensor_id)
+
+
+class TestEndToEnd(unittest.TestCase):           
     def test_publish_sensor(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
