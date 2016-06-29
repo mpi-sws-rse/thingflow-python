@@ -26,6 +26,9 @@ import unittest
 
 from mqtt_writer import MQTTWriter
 
+class StopSensor(Exception):
+    pass
+
 class DummySensor(object):
     def __init__(self, value_stream, sample_time=0):
         self.value_stream = value_stream
@@ -120,7 +123,6 @@ class TestEndToEnd(unittest.TestCase):
         publisher.subscribe(validator)
         self.writer = MQTTWriter('antevents', 'localhost', 1883, 'test')
         publisher.subscribe(self.writer)
-        publisher.print_downstream()
         scheduler = Scheduler()
         scheduler.schedule_periodic(publisher, 1)
         scheduler.run_forever()
