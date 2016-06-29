@@ -76,8 +76,9 @@ class Publisher:
             raise ExcInDispatch(e)
 
     def _dispatch_completed(self, topic=None):
-        subscribers = self.__subscribers__[topic if topic is not None
-                                           else 'default']
+        if topic==None:
+            topic = 'default'
+        subscribers = self.__subscribers__[topic]
         try:
             for s in subscribers:
                 s.on_completed()
@@ -88,8 +89,9 @@ class Publisher:
         self._close_topic(topic)
 
     def _dispatch_error(self, e, topic=None):
-        subscribers = self.__subscribers__[topic if topic is not None
-                                           else 'default']
+        if topic==None:
+            topic = 'default'
+        subscribers = self.__subscribers__[topic]
         try:
             for s in subscribers:
                 s.on_error(e)
@@ -172,7 +174,7 @@ class Scheduler:
                     interval.next_tick = self.time_in_ticks - \
                                          (unwrapped_time-interval.next_tick)
                     
-    def _get_tasks_to_sample(self):
+    def _get_tasks_to_run(self):
         sample_list = []
         for ticks in self.sorted_ticks:
             interval = self.intervals[ticks]
@@ -191,7 +193,7 @@ class Scheduler:
         if len(self.intervals)==0:
             raise FatalError("No publishers have been scheduled.")
         while True:
-            publishers = self._get_tasks_to_sample()
+            publishers = self._get_tasks_to_run()
             start_ts = utime.ticks_ms()
             for publisher in publishers:
                 more = publisher._observe()
