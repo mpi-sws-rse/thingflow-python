@@ -2,7 +2,7 @@
 them to validate the system before deploying to 8266. They use stub
 sensors.
 
-Test the utils.py module.
+Test the upython_utils.py module.
 """
 
 import sys
@@ -10,14 +10,14 @@ import os
 import os.path
 
 try:
-    import antevents_upython
+    import upython_utils
 except ImportError:
     sys.path.append(os.path.abspath('../'))
-    import antevents_upython
+    import upython_utils
 
 import unittest
 
-from antevents_upython.utils import *
+from upython_utils import *
 
 class TestLogging(unittest.TestCase):
     def _cleanup(self):
