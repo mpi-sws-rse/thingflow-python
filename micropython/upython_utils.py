@@ -1,26 +1,17 @@
 # Utility functions and classes for micropython
 
-import sys
-
-
-if sys.implementation.name=='micropython':
-    def wifi_connect(essid, password):
-        # Connect to the wifi. Based on the example in the micropython
-        # documentation.
-        import network
-        wlan = network.WLAN(network.STA_IF)
-        wlan.active(True)
-        if not wlan.isconnected():
-            get_logger().info('connecting to network...')
-            wlan.connect(essid, password)
-            while not wlan.isconnected():
-                pass
-        get_logger().info('network config:', wlan.ifconfig())
-else:
-    # stub version for testing
-    def wifi_connect(essid, password):
-        get_logger().info('wifi_connect(%s, %s) [stub version]' %
-                          (essid, password))
+def wifi_connect(essid, password):
+    # Connect to the wifi. Based on the example in the micropython
+    # documentation.
+    import network
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    if not wlan.isconnected():
+        get_logger().info('connecting to network...')
+        wlan.connect(essid, password)
+        while not wlan.isconnected():
+            pass
+    get_logger().info('network config: %s' % wlan.ifconfig().__repr__())
 
 
 import time
@@ -90,7 +81,7 @@ class Logger(object):
         if self.level <= Logger.WARNING:
             self._write('WRN', msg)
 
-    warn = warning # alias the shorthand for the lazy typists!
+    warn = warning
     
     def error(self, msg):
         if self.level <= Logger.ERROR:

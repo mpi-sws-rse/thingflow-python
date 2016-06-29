@@ -46,6 +46,10 @@ class TestLogging(unittest.TestCase):
         l.info('new file')
         self.assertTrue(os.path.exists('test.log'))
         self.assertTrue(os.path.exists('test.log.1'))
+
+    def test_wifi_connect(self):
+        initialize_logging('test.log', max_len=1024, interactive=True)
+        wifi_connect('foo', 'bar')
         
 if __name__ == '__main__':
     unittest.main()
