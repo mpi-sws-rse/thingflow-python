@@ -1,14 +1,12 @@
-"""Utility functions and classes.
-"""
+# Utility functions and classes.
 
-ESP8266_PLATFORM = 'esp8266'
 import sys
 
 
-if sys.platform==ESP8266_PLATFORM:
+if sys.implementation.name=='micropython':
     def wifi_connect(essid, password):
-        """Connect to the wifi. Based on the example in the micropython
-        documentation"""
+        # Connect to the wifi. Based on the example in the micropython
+        # documentation.
         import network
         wlan = network.WLAN(network.STA_IF)
         wlan.active(True)
@@ -27,9 +25,8 @@ else:
 
 import time
 
+# A really simple rotating logger
 class Logger(object):
-    """A really simple rotating logger
-    """
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -38,11 +35,10 @@ class Logger(object):
     
     def __init__(self, outputfile, max_len, level=INFO,
                  interactive=False):
-        """Specify a logfile, the max length of the file before rotating,
-        the minimum level to log, and whether this is being run interactivly.
-        If it is interactive, we also print messages in addition to saving
-        them to the file.
-        """
+        # Specify a logfile, the max length of the file before rotating,
+        # the minimum level to log, and whether this is being run interactivly.
+        # If it is interactive, we also print messages in addition to saving
+        # them to the file.
         self.outputfile = outputfile
         self.backupfile = outputfile + '.1'
         self.max_len = max_len

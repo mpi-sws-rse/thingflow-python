@@ -13,6 +13,8 @@ will be made more consistent in time. The assumption is that processors like
 the ESP8266 are used primarily to sample sensor data and pass it on to
 a larger system (e.g. a Raspberry Pi or a server).
 
+The entire implementation is in antevents.py.
+
 _Micropython: http://www.micropython.org
 _ESP8266: https://en.wikipedia.org/wiki/ESP8266
 

@@ -1,20 +1,24 @@
-"""Scheduler for periodic tasks. This scheduler is optimized for minimal
-power consumption (by reducing wake-ups) rather than for robustness in the face
-of tight deadlines.
+# Scheduler for periodic tasks. This scheduler is optimized for minimal
+# power consumption (by reducing wake-ups) rather than for robustness in the face
+# of tight deadlines.
 
-For ease of testing and flexibility, the scheduler API is designed such that the
-sensor sampling and the sleeps between events happen outside the scheduler. The
-scheduler is responsible for determining sleep times and the set of sensors to
-sample at each wakeup.
+# For ease of testing and flexibility, the scheduler API is designed such that the
+# sensor sampling and the sleeps between events happen outside the scheduler. The
+# scheduler is responsible for determining sleep times and the set of sensors to
+# sample at each wakeup.
 
-Time is measured in "ticks". The are likely seconds, but there is nothing in
-the scheduler depending on that. Fractional ticks are not allowed, to account
-for systems that cannot handle floating point sleep times.
+# Time is measured in "ticks". The are likely seconds, but there is nothing in
+# the scheduler depending on that. Fractional ticks are not allowed, to account
+# for systems that cannot handle floating point sleep times.
 
-This module is generic over sensors: a sensor can be any object type or an
-integer id.
-"""
-from collections import OrderedDict
+# This module is generic over sensors: a sensor can be any object type or an
+# integer id.
+
+import sys
+if sys.implementation.name=='micropython':
+    from ucollections import OrderedDict
+else:
+    from collections import OrderedDict
 
 class Interval:
     __slots__ = ('ticks', 'sensors', 'next_tick')
@@ -32,11 +36,11 @@ class Interval:
     def is_empty(self):
         return len(self.sensors)==0
 
+
+# Find the smallest existing interval I for which either the new interval
+# is a factor of I or I is a factor of the new interval. Returns None
+# otherwise.
 def find_interval_to_synchronize(new_interval, sorted_existing_intervals):
-    """Find the smallest existing interval I for which either the new interval
-    is a factor of I or I is a factor of the new interval. Returns None
-    otherwise.
-    """
     for i in sorted_existing_intervals:
         if (i%new_interval)==0 or (new_interval%i)==0:
             return i
@@ -86,8 +90,8 @@ class Scheduler:
         return len(self.intervals)==0
     
     def get_next_sleep_interval(self):
-        """Return an integer value representing the number of ticks to
-        sleep"""
+        # Return an integer value representing the number of ticks to
+        # sleep
         assert len(self.intervals)>0, "No sleep interval when no sensors"
         sleep_time = self.clock_wrap_interval # start with a large number
         for interval in self.intervals.values():
@@ -97,10 +101,9 @@ class Scheduler:
         return sleep_time
 
     def advance_time(self, ticks):
-        """Time has advanced the specified number of ticks. This should be
-        called after a sleep and after sampling has taken place (assuming
-        the sampling process isn't instantaneous relative to a tick).
-        """
+        # Time has advanced the specified number of ticks. This should be
+        # called after a sleep and after sampling has taken place (assuming
+        # the sampling process isn't instantaneous relative to a tick).
         assert ticks < self.clock_wrap_interval # bad things would happen if this fails
         self.time_in_ticks += ticks
         if self.time_in_ticks >= self.clock_wrap_interval:
@@ -115,12 +118,11 @@ class Scheduler:
                                          (unwrapped_time-interval.next_tick)
                     
     def get_sensors_to_sample(self):
-        """Given the current time, return a list of sensor ids
-        to sample. Also advances the next_tick counter for each
-        of these sensors. The sample list will be returned in the same order
-        every time, for a give set of sensors. The sensors are ordered by
-        interval creation and then by sensor creation within the interval.
-        """
+        # Given the current time, return a list of sensor ids
+        # to sample. Also advances the next_tick counter for each
+        # of these sensors. The sample list will be returned in the same order
+        # every time, for a give set of sensors. The sensors are ordered by
+        # interval creation and then by sensor creation within the interval.
         sample_list = []
         for interval in self.intervals.values():
             if interval.next_tick<=self.time_in_ticks:
