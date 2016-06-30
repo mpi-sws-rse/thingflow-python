@@ -29,12 +29,12 @@ class Publisher:
         self.__unschedule_hook__ = None
 
 
-    def subscribe(self, subscriber, topic_mapping=None):
-        if topic_mapping==None:
+    def subscribe(self, subscriber, topic_map=None):
+        if topic_map==None:
             pub_topic = 'default'
             sub_topic = 'default'
         else:
-            (pub_topic, sub_topic) = topic_mapping
+            (pub_topic, sub_topic) = topic_map
         if sub_topic==None or sub_topic=='default':
             dispatchnames = ('on_next', 'on_completed', 'on_error')
         else:
@@ -190,8 +190,7 @@ class Scheduler:
         return cancel
 
     def run_forever(self):
-        if len(self.intervals)==0:
-            raise FatalError("No publishers have been scheduled.")
+        assert len(self.intervals)>0
         while True:
             publishers = self._get_tasks_to_run()
             start_ts = utime.ticks_ms()
@@ -214,3 +213,26 @@ class Scheduler:
 
 
 SensorEvent = namedtuple('SensorEvent', ['sensor_id', 'ts', 'val'])
+
+class StopSensor(Exception):
+    pass
+
+class SensorPublisher(Publisher):
+    __slots__ = ('sensor', 'sensor_id')
+    def __init__(self, sensor, sensor_id):
+        super().__init__(None)
+        self.sensor = sensor
+        self.sensor_id = sensor_id
+    def _observe(self):
+        try:
+            val = self.sensor.sample()
+            self._dispatch_next(SensorEvent(self.sensor_id, utime.time(), val))
+            return True
+        except FatalError:
+            raise
+        except StopSensor:
+            self._dispatch_completed()
+            return False
+        except Exception as e:
+            self._dispatch_error(e)
+            return False

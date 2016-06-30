@@ -26,7 +26,7 @@ def mtpPub(topic, data):
   return  mtPacket(0b00110001, mtStr(topic), data)
 
 import socket
-import binascii
+import ubinascii
 
 def connect(name, host, port=1883):
   addr = socket.getaddrinfo(host, port)[0][4]
@@ -35,11 +35,11 @@ def connect(name, host, port=1883):
   s.connect(addr)
   s.send(mtpConnect(name))
   resp_header = s.recv(2)
-  print(binascii.hexlify(resp_header))
+  print(ubinascii.hexlify(resp_header))
   resp_len = int(resp_header[1])
   print("resp_len = %s" % resp_len)
   resp_var = s.recv(resp_len)
-  print(binascii.hexlify(resp_var))
+  print(ubinascii.hexlify(resp_var))
   return s
 
 def publish(s, topic, data): 
@@ -63,7 +63,7 @@ class MQTTWriter:
         print("Connection successful")
 
     def on_next(self, x):
-        data = bytes(json.dumps(x), encoding='utf-8')
+        data = bytes(json.dumps(x), 'utf-8')
         publish(self.socket, self.outbound_topic, data)
 
     def on_completed(self):
@@ -71,5 +71,5 @@ class MQTTWriter:
         disconnect(self.socket)
 
     def on_error(self, e):
-        print("Disconnecting from queue due to error")
+        print("Disconnecting from queue due to error: %s" %e)
         disconnect(self.socket)

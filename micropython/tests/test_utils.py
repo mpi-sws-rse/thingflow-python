@@ -2,7 +2,7 @@
 them to validate the system before deploying to 8266. They use stub
 sensors.
 
-Test the upython_utils.py module.
+Test wifi.py and logger.py
 """
 
 import sys
@@ -10,18 +10,20 @@ import os
 import os.path
 
 try:
-    import upython_utils
+    import wifi
+    import logger
 except ImportError:
     sys.path.append(os.path.abspath('../'))
-    import upython_utils
+    import wifi
+    import logger
+
 
 import unittest
 
-from upython_utils import *
 
 class TestLogging(unittest.TestCase):
     def _cleanup(self):
-        close_logging()
+        logger.close_logging()
         for f in ['test.log', 'test.log.1']:
             if os.path.exists(f):
                 os.remove(f)
@@ -34,8 +36,8 @@ class TestLogging(unittest.TestCase):
             
     def test_logging(self):
         self.assertTrue(not os.path.exists('test.log'))
-        initialize_logging('test.log', max_len=1024, interactive=True)
-        l = get_logger()
+        logger.initialize_logging('test.log', max_len=1024, interactive=True)
+        l = logger.get_logger()
         self.assertTrue(os.path.exists('test.log'))
         self.assertTrue(not os.path.exists('test.log.1'))
         l.debug('debug msg')
@@ -48,8 +50,7 @@ class TestLogging(unittest.TestCase):
         self.assertTrue(os.path.exists('test.log.1'))
 
     def test_wifi_connect(self):
-        initialize_logging('test.log', max_len=1024, interactive=True)
-        wifi_connect('foo', 'bar')
+        wifi.wifi_connect('foo', 'bar')
         
 if __name__ == '__main__':
     unittest.main()

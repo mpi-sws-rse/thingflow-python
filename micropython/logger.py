@@ -1,22 +1,5 @@
-# Utility functions and classes for micropython
-
-def wifi_connect(essid, password):
-    # Connect to the wifi. Based on the example in the micropython
-    # documentation.
-    import network
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    if not wlan.isconnected():
-        get_logger().info('connecting to network...')
-        wlan.connect(essid, password)
-        while not wlan.isconnected():
-            pass
-    get_logger().info('network config: %s' % wlan.ifconfig().__repr__())
-
-
-import time
-
 # A really simple rotating logger
+import time
 class Logger(object):
     DEBUG = 10
     INFO = 20

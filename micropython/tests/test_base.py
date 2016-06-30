@@ -19,8 +19,8 @@ except ImportError:
 import unittest
 
 
-class StopSensor(Exception):
-    pass
+# class StopSensor(Exception):
+#     pass
 
 class DummySensor:
     __slots__ = ('value_stream', 'sample_time', 'idx')
@@ -44,34 +44,34 @@ class DummySensor:
     def __str__(self):
         return 'DummySensor'
 
-class SensorPublisher(Publisher):
-    """Publish values sampled from a sensor. A value is obtained
-    by calling the sensor's sample() method. We wrap the value in
-    a SensorEvent.
-    """
-    __slots__ = ('sensor', 'sensor_id')
-    def __init__(self, sensor, sensor_id):
-        super().__init__()
-        self.sensor = sensor
-        self.sensor_id = sensor_id
+# class SensorPublisher(Publisher):
+#     """Publish values sampled from a sensor. A value is obtained
+#     by calling the sensor's sample() method. We wrap the value in
+#     a SensorEvent.
+#     """
+#     __slots__ = ('sensor', 'sensor_id')
+#     def __init__(self, sensor, sensor_id):
+#         super().__init__()
+#         self.sensor = sensor
+#         self.sensor_id = sensor_id
 
-    def _observe(self):
-        try:
-            val = self.sensor.sample()
-            self._dispatch_next(SensorEvent(self.sensor_id, time.time(), val))
-            return True
-        except FatalError:
-            raise
-        except StopSensor:
-            self._dispatch_completed()
-            return False
-        except Exception as e:
-            self._dispatch_error(e)
-            return False
+#     def _observe(self):
+#         try:
+#             val = self.sensor.sample()
+#             self._dispatch_next(SensorEvent(self.sensor_id, time.time(), val))
+#             return True
+#         except FatalError:
+#             raise
+#         except StopSensor:
+#             self._dispatch_completed()
+#             return False
+#         except Exception as e:
+#             self._dispatch_error(e)
+#             return False
 
-    def __repr__(self):
-        return "SensorPublisher(sensor=%s, sensor_id=%s)" % \
-            (self.sensor, self.sensor_id)
+#     def __repr__(self):
+#         return "SensorPublisher(sensor=%s, sensor_id=%s)" % \
+#             (self.sensor, self.sensor_id)
 
 
 class ValidationSubscriber:
@@ -95,6 +95,7 @@ class ValidationSubscriber:
         actual = self.extract_value_fn(x)
         tc.assertEqual(actual, expected,
                        "Values for element %d of event stream mismatch" % self.next_idx)
+        print(x)
         self.next_idx += 1
 
     def on_completed(self):
