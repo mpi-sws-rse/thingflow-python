@@ -87,7 +87,7 @@ class TestEndToEnd(unittest.TestCase):
     def test_publish_sensor(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
-        publisher = SensorPublisher(sensor, 'lux-1')
+        publisher = SensorPub(sensor, 'lux-1')
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
         self.writer = MQTTWriter('antevents', 'localhost', 1883, 'test')

@@ -33,46 +33,46 @@ class TestScheduler(unittest.TestCase):
         sched._add_task(1, 30)
         sched._add_task(2, 60)
         sched._add_task(3, 24)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [3, 1, 2])
         sleep = sched._get_next_sleep_interval()
         self.assertEqual(sleep, 24)
         sched._advance_time(24)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [3])
         sleep = sched._get_next_sleep_interval()
         self.assertEqual(sleep, 6)
         sched._advance_time(6)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [1])
         sleep = sched._get_next_sleep_interval()
         self.assertEqual(sleep, 18)
         sched._advance_time(18)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [3])
         sleep = sched._get_next_sleep_interval()
         self.assertEqual(sleep, 12)
         sched._advance_time(12)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [1, 2])
 
     def test_nonzero_sample_time(self):
         sched = Scheduler()
         sched._add_task(1, 30)
         sched._add_task(2, 60)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [1, 2])
         sched._advance_time(4)
         sleep = sched._get_next_sleep_interval()
         self.assertEqual(sleep, 26)
         sched._advance_time(28)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [1])
         sched._advance_time(1)
         sleep = sched._get_next_sleep_interval()
         self.assertEqual(sleep, 27)
         sched._advance_time(27)
-        samples = sched._get_tasks_to_run()
+        samples = sched._get_tasks()
         self.assertEqual(samples, [1, 2])
 
     def test_clock_wrap(self):
@@ -80,7 +80,7 @@ class TestScheduler(unittest.TestCase):
         sched._add_task(1, 8)
         sched._add_task(2, 16)
         for i in range(20):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             if (i%2)==0:
                 self.assertEqual(samples, [1, 2])
             else:
@@ -94,7 +94,7 @@ class TestScheduler(unittest.TestCase):
         sched = Scheduler(clock_wrap=32)
         sched._add_task(1, 8)
         for i in range(10):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             self.assertEqual(samples,[1])
             sleep = sched._get_next_sleep_interval()
             if i==0:
@@ -108,7 +108,7 @@ class TestScheduler(unittest.TestCase):
         sched._add_task(1, 4)
         sched._add_task(2, 8)
         for i in range(4):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             if (i%2)==0:
                 self.assertEqual(samples, [1, 2])
             else:
@@ -117,7 +117,7 @@ class TestScheduler(unittest.TestCase):
             sched._advance_time(sleep)
         sched._add_task(3, 4)
         for i in range(4):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             if (i%2)==0:
                 # order is based on creation order of intervals
                 self.assertEqual(samples, [1, 3, 2])
@@ -131,7 +131,7 @@ class TestScheduler(unittest.TestCase):
         sched._add_task(1, 4)
         sched._add_task(2, 8)
         for i in range(4):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             if (i%2)==0:
                 self.assertEqual(samples, [1, 2])
             else:
@@ -140,7 +140,7 @@ class TestScheduler(unittest.TestCase):
             sched._advance_time(sleep)
         sched._remove_task(1)
         for i in range(4):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             self.assertEqual(samples, [2])
             sleep = sched._get_next_sleep_interval()
             sched._advance_time(sleep)
@@ -155,7 +155,7 @@ class TestScheduler(unittest.TestCase):
         sched._add_task(s1, 4)
         sched._add_task(s2, 8)
         for i in range(4):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             if (i%2)==0:
                 self.assertEqual(samples, [s1, s2])
             else:
@@ -164,7 +164,7 @@ class TestScheduler(unittest.TestCase):
             sched._advance_time(sleep)
         sched._remove_task(s1)
         for i in range(4):
-            samples = sched._get_tasks_to_run()
+            samples = sched._get_tasks()
             self.assertEqual(samples, [s2])
             sleep = sched._get_next_sleep_interval()
             sched._advance_time(sleep)

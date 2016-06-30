@@ -82,7 +82,7 @@ class TestBase(unittest.TestCase):
     def test_base(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
-        publisher = SensorPublisher(sensor, '1')
+        publisher = SensorPub(sensor, '1')
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
         scheduler = Scheduler()
@@ -90,21 +90,21 @@ class TestBase(unittest.TestCase):
         scheduler.run_forever()
         self.assertTrue(validator.completed)
 
-    # def test_schedule_sensor(self):
-    #     expected = [1, 2, 3, 4, 5]
-    #     sensor = DummySensor(expected)
-    #     validator = ValidationSubscriber(expected, self)
-    #     scheduler = Scheduler()
-    #     scheduler.schedule_sensor_periodic(sensor, 1, 1, [validator])
-    #     scheduler.run_forever()
-    #     self.assertTrue(validator.completed)
+    def test_schedule_sensor(self):
+        expected = [1, 2, 3, 4, 5]
+        sensor = DummySensor(expected)
+        validator = ValidationSubscriber(expected, self)
+        scheduler = Scheduler()
+        scheduler.schedule_sensor(sensor, 1, 1, validator)
+        scheduler.run_forever()
+        self.assertTrue(validator.completed)
 
     def test_nonzero_sample_time(self):
         """Sensor sample time is greater than the interval between samples!
         """
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected, sample_time=2)
-        publisher = SensorPublisher(sensor, 1)
+        publisher = SensorPub(sensor, 1)
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
         scheduler = Scheduler()

@@ -8,26 +8,21 @@ class FatalError(Exception):
     pass
 
 class ExcInDispatch(FatalError):
-    # Dispatching an event should not raise an error, other than a
-    # fatal error.
+    # Dispatching an event should not raise an error, other than a fatal error.
     pass
 
 
-_Subscription = namedtuple('_Subscription',
-                           ['on_next', 'on_completed', 'on_error'])
-
+_Subscription = namedtuple('_Subscription', ['on_next', 'on_completed', 'on_error'])
 
 # Base class for event generators (publishers).
 class Publisher:
-    __slots__ = ('__subscribers__', '__unschedule_hook__')
+    __slots__ = ('__subscribers__',)
     def __init__(self, topics=None):
-        self.__subscribers__ = {} # map from topic to subscriber set
+        self.__subscribers__ = {}
         if topics==None:
             topics = ['default']
         for topic in topics:
             self.__subscribers__[topic] = []
-        self.__unschedule_hook__ = None
-
 
     def subscribe(self, subscriber, topic_map=None):
         if topic_map==None:
@@ -54,16 +49,6 @@ class Publisher:
             self.__subscribers__[pub_topic] = new_subscribers
         return dispose
 
-    def _schedule(self, unschedule_hook):
-        self.__unschedule_hook__ = unschedule_hook
-
-    def _close_topic(self, topic):
-        del self.__subscribers__[topic]
-        if len(self.__subscribers__)==0 and self.__unschedule_hook__ is not None:
-            print("Calling unschedule hook for %s" % self)
-            self.__unschedule_hook__()
-            self.__unschedule_hook__ = None
-
     def _dispatch_next(self, x, topic=None):
         subscribers = self.__subscribers__[topic if topic is not None
                                            else 'default']
@@ -86,7 +71,7 @@ class Publisher:
             raise
         except Exception as e:
             raise ExcInDispatch(e)
-        self._close_topic(topic)
+        del self.__subscribers__[topic]
 
     def _dispatch_error(self, e, topic=None):
         if topic==None:
@@ -99,13 +84,30 @@ class Publisher:
             raise
         except Exception as e:
             raise ExcInDispatch(e)
-        self._close_topic(topic)
+        del self.__subscribers__[topic]
 
     def _observe(self):
         # Get an event and call the appropriate dispatch function.
-        # Return True if there is more data and False otherwise.
         raise NotImplemented
 
+class StopSensor(Exception):
+    pass
+
+class SensorPub(Publisher):
+    __slots__ = ('sensor', 'sensor_id')
+    def __init__(self, sensor, sensor_id):
+        super().__init__(None)
+        self.sensor = sensor
+        self.sensor_id = sensor_id
+    def _observe(self):
+        try:
+            self._dispatch_next((self.sensor_id, utime.time(), self.sensor.sample()),)
+        except FatalError:
+            raise
+        except StopSensor:
+            self._dispatch_completed()
+        except Exception as e:
+            self._dispatch_error(e)
 
 class _Interval:
     __slots__ = ('ticks', 'tasks', 'next_tick')
@@ -142,20 +144,20 @@ class Scheduler:
             self.sorted_ticks.sort()
 
     def _remove_task(self, task):
-        for interval in self.intervals.values():
-            if task in interval.tasks:
-                interval.tasks.remove(task)
-                if len(interval.tasks)==0:
-                    self.sorted_ticks.remove(interval.ticks)
-                    del self.intervals[interval.ticks]
+        for i in self.intervals.values():
+            if task in i.tasks:
+                i.tasks.remove(task)
+                if len(i.tasks)==0:
+                    self.sorted_ticks.remove(i.ticks)
+                    del self.intervals[i.ticks]
                 return
         assert 0, "Did not find task %s" % task
 
     def _get_next_sleep_interval(self):
         assert len(self.intervals)>0
         sleep_time = self.clock_wrap
-        for interval in self.intervals.values():
-            time_diff = max(interval.next_tick-self.time_in_ticks, 0)
+        for i in self.intervals.values():
+            time_diff = max(i.next_tick-self.time_in_ticks, 0)
             if time_diff < sleep_time:
                 sleep_time = time_diff
         return sleep_time
@@ -167,20 +169,19 @@ class Scheduler:
             # wrap all the clocks
             unwrapped_time = self.time_in_ticks
             self.time_in_ticks = self.time_in_ticks % self.clock_wrap
-            for interval in self.intervals.values():
-                if interval.next_tick >= self.clock_wrap:
-                    interval.next_tick = interval.next_tick % self.clock_wrap
+            for i in self.intervals.values():
+                if i.next_tick >= self.clock_wrap:
+                    i.next_tick = i.next_tick % self.clock_wrap
                 else: # the interval is already overdue
-                    interval.next_tick = self.time_in_ticks - \
-                                         (unwrapped_time-interval.next_tick)
+                    i.next_tick = self.time_in_ticks - (unwrapped_time-i.next_tick)
                     
-    def _get_tasks_to_run(self):
+    def _get_tasks(self): # get runnable tasks
         sample_list = []
         for ticks in self.sorted_ticks:
-            interval = self.intervals[ticks]
-            if interval.next_tick<=self.time_in_ticks:
-                sample_list.extend(interval.tasks)
-                interval.next_tick = interval.next_tick + interval.ticks
+            i = self.intervals[ticks]
+            if i.next_tick<=self.time_in_ticks:
+                sample_list.extend(i.tasks)
+                i.next_tick = i.next_tick + i.ticks
         return sample_list
 
     def schedule_periodic(self, publisher, interval):
@@ -189,47 +190,28 @@ class Scheduler:
             self._remove_task(publisher)
         return cancel
 
+    def schedule_sensor(self, sensor, sensor_id, interval, *subs):
+        task = SensorPub(sensor, sensor_id)
+        for s in subs:
+            task.subscribe(s)
+        return self.schedule_periodic(task, interval)
+    
     def run_forever(self):
         assert len(self.intervals)>0
         while True:
-            publishers = self._get_tasks_to_run()
+            publishers = self._get_tasks()
             start_ts = utime.ticks_ms()
-            for publisher in publishers:
-                more = publisher._observe()
-                if not more:
-                    self._remove_task(publisher)
+            for pub in publishers:
+                pub._observe()
+                if not pub.__subscribers__:
+                    self._remove_task(pub)
             if len(self.intervals)==0:
                 break
             end_ts = utime.ticks_ms()
             sample_time = int(round(utime.ticks_diff(start_ts, end_ts)/1000))
             if sample_time > 0:
                 self._advance_time(sample_time)
-            sleeptime = self._get_next_sleep_interval()
-            utime.sleep(sleeptime)
-            wake_ts = utime.ticks_ms()
+            utime.sleep(self._get_next_sleep_interval())
             actual_sleep_time = int(round(utime.ticks_diff(end_ts,
-                                                           wake_ts)/1000))
+                                                           utime.ticks_ms())/1000))
             self._advance_time(actual_sleep_time)
-
-class StopSensor(Exception):
-    pass
-
-class SensorPublisher(Publisher):
-    __slots__ = ('sensor', 'sensor_id')
-    def __init__(self, sensor, sensor_id):
-        super().__init__(None)
-        self.sensor = sensor
-        self.sensor_id = sensor_id
-    def _observe(self):
-        try:
-            val = self.sensor.sample()
-            self._dispatch_next((self.sensor_id, utime.time(), val),)
-            return True
-        except FatalError:
-            raise
-        except StopSensor:
-            self._dispatch_completed()
-            return False
-        except Exception as e:
-            self._dispatch_error(e)
-            return False
