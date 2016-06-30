@@ -53,7 +53,7 @@ class ValidationSubscriber:
     test).
     """
     def __init__(self, expected_stream, test_case,
-                 extract_value_fn=lambda event:event.val):
+                 extract_value_fn=lambda event:event[2]):
         self.expected_stream = expected_stream
         self.next_idx = 0
         self.test_case = test_case

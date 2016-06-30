@@ -55,21 +55,21 @@ def disconnect(s):
 import json
 
 class MQTTWriter:
-    __slots__ = ('socket', 'outbound_topic')
-    def __init__(self, name, host, port, outbound_topic):
-        self.outbound_topic = outbound_topic
-        print("Connecting to %s:%s" % (host, port))
-        self.socket = connect(name, host, port)
-        print("Connection successful")
+  __slots__ = ('socket', 'outbound_topic')
+  def __init__(self, name, host, port, outbound_topic):
+    self.outbound_topic = outbound_topic
+    print("Connecting to %s:%s" % (host, port))
+    self.socket = connect(name, host, port)
+    print("Connection successful")
 
-    def on_next(self, x):
-        data = bytes(json.dumps(x), 'utf-8')
-        publish(self.socket, self.outbound_topic, data)
+  def on_next(self, x):
+    data = bytes(json.dumps(x), 'utf-8')
+    publish(self.socket, self.outbound_topic, data)
 
-    def on_completed(self):
-        print("Disconnecting from queue")
-        disconnect(self.socket)
+  def on_completed(self):
+    print("Disconnecting from queue")
+    disconnect(self.socket)
 
-    def on_error(self, e):
-        print("Disconnecting from queue due to error: %s" %e)
-        disconnect(self.socket)
+  def on_error(self, e):
+    print("Disconnecting from queue due to error: %s" %e)
+    disconnect(self.socket)

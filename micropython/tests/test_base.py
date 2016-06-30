@@ -19,9 +19,6 @@ except ImportError:
 import unittest
 
 
-# class StopSensor(Exception):
-#     pass
-
 class DummySensor:
     __slots__ = ('value_stream', 'sample_time', 'idx')
     def __init__(self, value_stream, sample_time=0):
@@ -44,35 +41,6 @@ class DummySensor:
     def __str__(self):
         return 'DummySensor'
 
-# class SensorPublisher(Publisher):
-#     """Publish values sampled from a sensor. A value is obtained
-#     by calling the sensor's sample() method. We wrap the value in
-#     a SensorEvent.
-#     """
-#     __slots__ = ('sensor', 'sensor_id')
-#     def __init__(self, sensor, sensor_id):
-#         super().__init__()
-#         self.sensor = sensor
-#         self.sensor_id = sensor_id
-
-#     def _observe(self):
-#         try:
-#             val = self.sensor.sample()
-#             self._dispatch_next(SensorEvent(self.sensor_id, time.time(), val))
-#             return True
-#         except FatalError:
-#             raise
-#         except StopSensor:
-#             self._dispatch_completed()
-#             return False
-#         except Exception as e:
-#             self._dispatch_error(e)
-#             return False
-
-#     def __repr__(self):
-#         return "SensorPublisher(sensor=%s, sensor_id=%s)" % \
-#             (self.sensor, self.sensor_id)
-
 
 class ValidationSubscriber:
     """Compare the values in a event stream to the expected values.
@@ -80,7 +48,7 @@ class ValidationSubscriber:
     test).
     """
     def __init__(self, expected_stream, test_case,
-                 extract_value_fn=lambda event:event.val):
+                 extract_value_fn=lambda event:event[2]):
         self.expected_stream = expected_stream
         self.next_idx = 0
         self.test_case = test_case

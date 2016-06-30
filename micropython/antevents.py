@@ -211,9 +211,6 @@ class Scheduler:
                                                            wake_ts)/1000))
             self._advance_time(actual_sleep_time)
 
-
-SensorEvent = namedtuple('SensorEvent', ['sensor_id', 'ts', 'val'])
-
 class StopSensor(Exception):
     pass
 
@@ -226,7 +223,7 @@ class SensorPublisher(Publisher):
     def _observe(self):
         try:
             val = self.sensor.sample()
-            self._dispatch_next(SensorEvent(self.sensor_id, utime.time(), val))
+            self._dispatch_next((self.sensor_id, utime.time(), val),)
             return True
         except FatalError:
             raise
