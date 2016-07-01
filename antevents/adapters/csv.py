@@ -86,15 +86,20 @@ def csv_writer(this, filename, mapper=default_event_mapper):
 def default_get_date_from_event(event):
     return datetime.datetime.utcfromtimestamp(event.ts).date()
 
-class RollingCsvWriter(DefaultSubscriber):
+class RollingCsvWriter(Publisher, DefaultSubscriber):
     """Write an event stream to csv files, rolling to a new file
     daily. The filename is basename-yyyy-mm-dd.cvv. Typically,
-    basename is the sensor id. 
+    basename is the sensor id.
+    If sub_topic is specified, the writer will subscribe to the specified topic
+    in the previous filter, rather than the default topic. This is helpful
+    when connecting to a dispatcher.
     """
     def __init__(self, previous_in_chain, directory,
                  base_name,
                  mapper=default_event_mapper,
-                 get_date=default_get_date_from_event):
+                 get_date=default_get_date_from_event,
+                 sub_topic=None):
+        super().__init__()
         self.directory = directory
         self.base_name = base_name
         self.mapper = mapper
@@ -102,7 +107,11 @@ class RollingCsvWriter(DefaultSubscriber):
         self.current_file_date = None
         self.file = None
         self.writer = None
-        self.dispose = previous_in_chain.subscribe(self)
+        if sub_topic is None:
+            self.dispose = previous_in_chain.subscribe(self)
+        else:
+            self.dispose = previous_in_chain.subscribe(self,
+                                                       topic_mapping=(sub_topic, 'default'))
 
     def _start_file(self, event_date):
         filename = os.path.join(self.directory,
@@ -129,23 +138,34 @@ class RollingCsvWriter(DefaultSubscriber):
             self._start_file(event_date)
         self.writer.writerow(self.mapper.event_to_row(x))
         self.file.flush()
+        self._dispatch_next(x)
 
     def on_completed(self):
         if self.file:
             self.file.close()
+        self._dispatch_completed()
 
     def on_error(self, e):
         if self.file:
             self.file.close()
+        self._dispatch_error(e)
 
     def __str__(self):
-        return 'rolling_csv_writer(%s)' % self.filename
+        return 'rolling_csv_writer(%s)' % self.base_name
 
 
 @extensionmethod(Publisher)
 def rolling_csv_writer(this, directory, basename, mapper=default_event_mapper,
-                            get_date=default_get_date_from_event):
-    return RollingCsvWriter(this, directory, basename, mapper, get_date)
+                            get_date=default_get_date_from_event, sub_topic=None):
+    """Write an event stream to csv files, rolling to a new file
+    daily. The filename is basename-yyyy-mm-dd.cvv. Typically,
+    basename is the sensor id.
+    If sub_topic is specified, the writer will subscribe to the specified topic
+    in the previous filter, rather than the default topic. This is helpful
+    when connecting to a dispatcher.
+    """
+    return RollingCsvWriter(this, directory, basename, mapper=mapper,
+                            get_date=get_date, sub_topic=sub_topic)
     
 
 class CsvReader(DirectReader):
