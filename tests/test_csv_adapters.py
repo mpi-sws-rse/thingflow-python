@@ -11,6 +11,7 @@ import datetime
 from antevents.base import Scheduler, IterableAsPublisher
 from antevents.adapters.csv import CsvReader, default_event_mapper, RollingCsvWriter
 from antevents.sensor import SensorEvent
+import antevents.linq.dispatch
 from utils import make_test_sensor, CaptureSubscriber, \
     SensorEventValidationSubscriber
 
@@ -51,6 +52,7 @@ class TestCases(unittest.TestCase):
         finally:
             os.remove(tf.name)
 
+# data for rollover test
 ROLLING_FILE1 = 'dining-room-2015-01-01.csv'
 ROLLING_FILE2 = 'dining-room-2015-01-02.csv'
 FILES = [ROLLING_FILE1, ROLLING_FILE2]
@@ -61,10 +63,23 @@ EVENTS = [SensorEvent('dining-room', make_ts(1, 11, 1), 1),
           SensorEvent('dining-room', make_ts(2, 11, 1), 3),
           SensorEvent('dining-room', make_ts(2, 11, 2), 4)]
 
+# data for dispatch test
+sensor_ids = ['dining-room', 'living-room']
+ROLLING_FILE3 = 'living-room-2015-01-01.csv'
+ROLLING_FILE4 = 'living-room-2015-01-02.csv'
+FILES2 = [ROLLING_FILE1, ROLLING_FILE2, ROLLING_FILE3, ROLLING_FILE4]
+EVENTS2 = [SensorEvent('dining-room', make_ts(1, 11, 1), 1),
+           SensorEvent('living-room', make_ts(1, 11, 2), 2),
+           SensorEvent('living-room', make_ts(2, 11, 1), 3),
+           SensorEvent('dining-room', make_ts(2, 11, 2), 4)]
+def make_rule(sensor_id):
+    return (lambda evt: evt.sensor_id==sensor_id, sensor_id)
+dispatch_rules = [make_rule(s) for s in sensor_ids]
+
 
 class TestRollingCsvWriter(unittest.TestCase):
     def _cleanup(self):
-        for f in FILES:
+        for f in FILES2:
             if os.path.exists(f):
                 os.remove(f)
 
@@ -88,6 +103,33 @@ class TestRollingCsvWriter(unittest.TestCase):
         for f in FILES:
             self.assertTrue(os.path.exists(f), 'did not find file %s' % f)
             print("found log file %s" % f)
+
+    def test_dispatch(self):
+        """Test a scenario where we dispatch to one of several writers
+        depending on the sensor id.
+        """
+        def generator():
+            for e in EVENTS2:
+                yield e
+        sensor = IterableAsPublisher(generator(), name='sensor')
+        dispatcher = sensor.dispatch(dispatch_rules)
+        for s in sensor_ids:
+            dispatcher.rolling_csv_writer('.', s, sub_topic=s)
+        dispatcher.subscribe(lambda x: self.assertTrue(False, "bad dispatch of %s" % x))
+        scheduler = Scheduler(asyncio.get_event_loop())
+        scheduler.schedule_recurring(sensor)
+        scheduler.run_forever()
+        for f in FILES2:
+            self.assertTrue(os.path.exists(f), 'did not find file %s' % f)
+            cnt = 0
+            with open(f, 'r') as fobj:
+                for line in fobj:
+                    cnt +=1
+            self.assertEqual(2, cnt, "File %s did not have 2 lines" % f)
+            print("found log file %s" % f)
+        
+
+
 if __name__ == '__main__':
     unittest.main()
         
