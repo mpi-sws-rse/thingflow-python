@@ -12,6 +12,7 @@ SensorEvent = namedtuple('SensorEvent', ['sensor_id', 'ts', 'val'])
 import datetime
 import csv as csvlib
 import logging
+import os.path
 logger = logging.getLogger(__name__)
 
 from antevents.base import DefaultSubscriber, Publisher, FatalError
@@ -82,7 +83,68 @@ def csv_writer(this, filename, mapper=default_event_mapper):
     """    
     return CsvWriter(this, filename, mapper)
 
+def default_get_date_from_event(event):
+    return datetime.datetime.utcfromtimestamp(event.ts).date()
 
+class CsvRollingFileWriter(DefaultSubscriber):
+    """Write an event stream to csv files, rolling to a new file
+    daily. The filename is basename-yyyy-mm-dd.cvv. Typically,
+    basename is the sensor id. 
+    """
+    def __init__(self, previous_in_chain, directory,
+                 base_name,
+                 mapper=default_event_mapper,
+                 get_date=default_get_date_from_event):
+        self.directory = directory
+        self.base_name = base_name
+        self.mapper = mapper
+        self.get_date = get_date
+        self.current_file_date = None
+        self.file = None
+        self.writer = None
+        self.dispose = previous_in_chain.subscribe(self)
+
+    def _start_file(self, event_date):
+        filename = os.path.join(self.directory,
+                                self.base_name +
+                                ('-%d-%02d-%02d.csv' %
+                                 (event_date.year, event_date.month,
+                                  event_date.day)))
+        if os.path.exists(filename):
+            self.file = open(filename, 'a', newline='')
+            self.writer = csvlib.writer(self.file)
+            # don't write header row for existing file
+        else:
+            self.file = open(filename, 'w', newline='')
+            self.writer = csvlib.writer(self.file)
+            self.writer.writerow(self.mapper.get_header_row())
+        self.file.flush()
+        self.current_file_date = event_date
+        
+    def on_next(self, x):
+        event_date = self.get_date(x)
+        if event_date!=self.current_file_date:
+            if self.file:
+                self.file.close()
+            self._start_file(event_date)
+        self.writer.writerow(self.mapper.event_to_row(x))
+        self.file.flush()
+
+    def on_completed(self):
+        self.file.close()
+
+    def on_error(self, e):
+        self.file.close()
+
+    def __str__(self):
+        return 'csv_rolling_file_writer(%s)' % self.filename
+
+
+@extensionmethod(Publisher)
+def csv_rolling_file_writer(this, directory, basename, mapper=default_event_mapper,
+                            get_date=default_get_date_from_event):
+    return CsvRollingFileWriter(this, directory, basename, mapper, get_date)
+    
 
 class CsvReader(DirectReader):
     def __init__(self, filename, mapper=default_event_mapper,
