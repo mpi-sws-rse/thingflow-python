@@ -10,12 +10,12 @@ import os
 # Params to set
 WIFI_SID=""
 WIFI_PW=""
-SENSOR_ID="lux-1"
+SENSOR_ID="front-room"
 BROKER='192.168.11.153'
 
 wifi_connect(WIFI_SID, WIFI_PW)
 sensor = Tsl2591()
-writer = MQTTWriter(SENSOR_ID, BROKER, 1883, BROKER)
+writer = MQTTWriter(SENSOR_ID, BROKER, 1883, 'remote-sensors')
 sched = Scheduler()
 sched.schedule_sensor(sensor, SENSOR_ID, 60, writer)
 try:

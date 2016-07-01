@@ -86,7 +86,7 @@ def csv_writer(this, filename, mapper=default_event_mapper):
 def default_get_date_from_event(event):
     return datetime.datetime.utcfromtimestamp(event.ts).date()
 
-class CsvRollingFileWriter(DefaultSubscriber):
+class RollingCsvWriter(DefaultSubscriber):
     """Write an event stream to csv files, rolling to a new file
     daily. The filename is basename-yyyy-mm-dd.cvv. Typically,
     basename is the sensor id. 
@@ -131,19 +131,21 @@ class CsvRollingFileWriter(DefaultSubscriber):
         self.file.flush()
 
     def on_completed(self):
-        self.file.close()
+        if self.file:
+            self.file.close()
 
     def on_error(self, e):
-        self.file.close()
+        if self.file:
+            self.file.close()
 
     def __str__(self):
-        return 'csv_rolling_file_writer(%s)' % self.filename
+        return 'rolling_csv_writer(%s)' % self.filename
 
 
 @extensionmethod(Publisher)
-def csv_rolling_file_writer(this, directory, basename, mapper=default_event_mapper,
+def rolling_csv_writer(this, directory, basename, mapper=default_event_mapper,
                             get_date=default_get_date_from_event):
-    return CsvRollingFileWriter(this, directory, basename, mapper, get_date)
+    return RollingCsvWriter(this, directory, basename, mapper, get_date)
     
 
 class CsvReader(DirectReader):

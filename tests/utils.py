@@ -105,6 +105,7 @@ class SensorEventValidationSubscriber(DefaultSubscriber):
         self.completed = True
 
     def on_error(self, exc):
+        tc = self.test_case
         tc.assertTrue(False,
                       "Got an unexpected on_error call with parameter: %s" % exc)
 
