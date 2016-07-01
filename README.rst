@@ -55,10 +55,15 @@ Platforms
 Ant Events does not have any required external dependendencies, so, in theory
 at least, it can be run just about anywhere you can run Python 3. It has been
 tested on the Raspberry Pi (Rasbian distribution), Desktop Linux, and MacOSX.
-Work is underway to port it to Micropython_, so that it can run on very small
-devices, like the ESP8266_. In a desktop environment, you might find the
+In a desktop environment, you might find the
 Anaconda_ Python distribution helpful, as it comes with many data analytics
 tools (e.g. Jupyter, NumPy, Pandas, and scikit-learn) pre-installed.
+
+Ant Events has been ported to Micropython_, so that it can run on very small
+devices, like the ESP8266_. Since these devices have stringent memory
+requirements, the code base has been stripped down to a core for the
+Micropython port. The port is in this repository under the ``micropython``
+directory.
 
 .. _Micropython: http://www.micropython.org
 .. _ESP8266: http://docs.micropython.org/en/latest/esp8266/esp8266/quickref.html
@@ -99,6 +104,8 @@ directory) is as follows:
 + ``examples/`` - examples and other documentation.
 
   + ``examples/notebooks`` - examples that use Jupyter
+
++ ``micropython/`` - port of Ant Events core to Micropython
 
 
 .. _Linq: https://en.wikipedia.org/wiki/Language_Integrated_Query
