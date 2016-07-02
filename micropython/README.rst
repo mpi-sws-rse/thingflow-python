@@ -16,9 +16,16 @@ a larger system (e.g. a Raspberry Pi or a server).
 The core implementation is in antevents.py. The other files (logger.py,
 mqtt_writer.py, and wifi.py) provide some additional utilities.
 
-_Micropython: http://www.micropython.org
-_ESP8266: https://en.wikipedia.org/wiki/ESP8266
+.. _Micropython: http://www.micropython.org
+.. _ESP8266: https://en.wikipedia.org/wiki/ESP8266
 
+Installing
+----------
+Just copy the python files in this directory to your micropython board.
+Micropython's webrepl has experimental support for copying files. I
+instead used mpfshell_ to copy files to my ESP8266 board.
+
+.. _mpfshell: https://github.com/wedlers/mpfshell
 
 Scheduler Design
 -----------------
@@ -63,3 +70,16 @@ optimize for wakeups, the following approaches are used:
    had run at the correct time (by making the interval shorter). This avoids
    tasks getting out-of-sync when one misses a deadline.
 
+ Logger
+ ------
+ ``logger.py`` provides a very simple rotating file logger with an API that
+ is a subset of Python's ``logging`` API. Given a log file ``outputfile``,
+ it will log events to that file until the length would exceed ``max_len``.
+ At that point, it renames the file to ``outputfile``.1 and then starts
+ a new logfile. Thus, the maximum size of the logs at any given time should
+ be 2*``max_len``.
+
+ To use the logger, you need to first call ``initialize_logging()``. You can
+ then call ``get_logger()`` to get the logger instance. Note that there is a
+ single global log level. The whole mess of handlers, formatters, and filters
+ is not provided.
