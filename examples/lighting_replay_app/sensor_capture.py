@@ -2,6 +2,7 @@
 """
 import time
 import asyncio
+import sys
 
 from antevents.base import Publisher, Scheduler
 from antevents.sensor import SensorEvent
@@ -13,7 +14,11 @@ import antevents.linq.select
 import antevents.linq.json
 from antevents.adapters.mqtt import MQTTReader
 
-DIRECTORY='.'
+if len(sys.argv)>1:
+    DIRECTORY=sys.argv[1]
+else:
+    DIRECTORY='.'
+print("Using %s as directory for log files" % DIRECTORY)
 
 LOCAL_SENSOR_ID='dining-room'
 try:
@@ -35,7 +40,7 @@ scheduler = Scheduler(asyncio.get_event_loop())
 
 
 if HAS_LOCAL_SENSOR:
-    sensor = LuxSensor()
+    sensor = LuxSensor(sensor_id=LOCAL_SENSOR_ID)
     sensor.rolling_csv_writer(DIRECTORY, LOCAL_SENSOR_ID)
     sensor.output()
     scheduler.schedule_periodic_on_separate_thread(sensor, 60)
