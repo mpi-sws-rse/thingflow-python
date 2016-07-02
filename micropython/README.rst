@@ -13,9 +13,53 @@ will be made more consistent in time. The assumption is that processors like
 the ESP8266 are used primarily to sample sensor data and pass it on to
 a larger system (e.g. a Raspberry Pi or a server).
 
-The entire implementation is in antevents.py.
+The core implementation is in antevents.py. The other files (logger.py,
+mqtt_writer.py, and wifi.py) provide some additional utilities.
 
 _Micropython: http://www.micropython.org
 _ESP8266: https://en.wikipedia.org/wiki/ESP8266
 
+
+Scheduler Design
+-----------------
+Since micropython does not provide an event scheduler, we provide one directly
+in antevents.py. This scheduler is optimized for minimal power consumption (by
+reducing wake-ups) rather than for robustness in the face of tight deadlines.
+
+The scheduler has two layers: the *internal* layer (represented by the methods
+starting with an underscore) and the *public* layer. The public layer provides
+an API similar to the standard Ant Events scheduler and is built on the internal
+layer.
+
+For ease of testing and flexibility, the internal layer is designed such that the
+sensor sampling and the sleeps between events happen outside it. The internal
+layer is responsible for determining sleep times and the set of tasks to
+sample at each wakeup.
+
+Time within the internal layer is measured in "ticks". The are likely seconds,
+but there is nothing in the scheduler depending on that. Fractional ticks are
+not allowed, to account for systems that cannot handle floating point sleep
+times. The scheduler tracks the current logical time in ticks and updates
+this based on elapsed time. To avoid issues with unexpected wrapping of the
+logical clock, it is automatically wrapped every 65535 ticks. The logical
+times for each for each scheduled task are then updated to reflect the wrapped
+clock.
+
+When a task (publisher) is added to the scheduler, a sample interval is specified. To
+optimize for wakeups, the following approaches are used:
+
+1. Tasks with the same interval are always scheduled together. If a new task is
+   added that matches an older task's interval, it will not be scheduled until
+   the existing one is run.
+2. If there are no tasks with the same interval, we look for the smallest
+   interval that is either a factor or multiple of the new interval. We
+   schedule the new interval to be coordinated with this one. For example, if
+   we have a new interval 60 seconds and old intervals 30/45 seconds, we will
+   schedule the new 60 second interval to first run on the next execution
+   of the 30 second tasks. Thus, they will run at the same time for each
+   execution of the 60 second interval.
+3. The next time for a task is maintained in logical ticks. If a task is run
+   later than its interval, the next scheduled execution is kept as if the task
+   had run at the correct time (by making the interval shorter). This avoids
+   tasks getting out-of-sync when one misses a deadline.
 
