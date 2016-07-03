@@ -20,12 +20,42 @@ mqtt_writer.py, and wifi.py) provide some additional utilities.
 .. _ESP8266: https://en.wikipedia.org/wiki/ESP8266
 
 Installing
-----------
+==========
 Just copy the python files in this directory to your micropython board.
 Micropython's webrepl has experimental support for copying files. I
 instead used mpfshell_ to copy files to my ESP8266 board.
 
+To free up more memory, I disabled the starting if the webrepl in the
+``boot.py`` script.
+
 .. _mpfshell: https://github.com/wedlers/mpfshell
+
+Bug Workarounds
+===============
+The antevents code has a few workarounds for bugs in Micropython (at least
+the ESP8266 port).
+
+Clock wrapping
+--------------
+The clock on the ESP8266 wraps once every few hours. This causes problems when
+we wish to measure sleep time. The ``utime.ticks_diff()`` function is
+supposed to handle this, bug apparently is buggy. This leads to cases where
+the calculation:::
+
+    int(round(utime.ticks_diff(end_ts, now)/1000))
+
+yields 1,069,506 seconds instead of 59 seconds. Luckily, an assert in
+``_advance_time`` caught the issue. The clock had clearly wrapped as
+``end_ts`` (the earlier time) was 4266929 and the current timestamp was 30963.
+
+Long variable names for keyword arguments
+-----------------------------------------
+There is a bug in Micropython where keyword argument names longer than 10
+characters can result in a incorrect exception saying that keyword arguments
+are not implemented. I think this is related to Micropython issue #1998.
+
+Design Notes
+=============
 
 Scheduler Design
 -----------------
@@ -52,8 +82,8 @@ logical clock, it is automatically wrapped every 65535 ticks. The logical
 times for each for each scheduled task are then updated to reflect the wrapped
 clock.
 
-When a task (publisher) is added to the scheduler, a sample interval is specified. To
-optimize for wakeups, the following approaches are used:
+When a task (publisher) is added to the scheduler, a sample interval is
+specified. To optimize for wakeups, the following approaches are used:
 
 1. Tasks with the same interval are always scheduled together. If a new task is
    added that matches an older task's interval, it will not be scheduled until
@@ -70,8 +100,11 @@ optimize for wakeups, the following approaches are used:
    had run at the correct time (by making the interval shorter). This avoids
    tasks getting out-of-sync when one misses a deadline.
 
- Logger
- ------
+The public API layer is a subset of the standard Ant Events scheduler API,
+except for the additional ``schedule_sensor`` convenience method.
+ 
+Logger
+------
  ``logger.py`` provides a very simple rotating file logger with an API that
  is a subset of Python's ``logging`` API. Given a log file ``outputfile``,
  it will log events to that file until the length would exceed ``max_len``.

@@ -504,7 +504,7 @@ and *sink* would be more obvious. Is it worth the change?
 Bias: **Change**
 
 The ``on_error`` Callback
------------------------
+--------------------------
 Borrowing from Microsoft's Rx framework, Ant Events has three callbacks on each
 subscriber: ``on_next``, ``on_completed``, and ``on_error``. The ``on_error`` callback
 is kind of strange: since it is defined to be called *at most once*, it is

@@ -117,8 +117,7 @@ class _Interval:
         self.next_tick = next_tick
 
 class Scheduler:
-    __slots__ = ('clock_wrap', 'time_in_ticks', 'intervals',
-                 'sorted_ticks')
+    __slots__ = ('clock_wrap', 'time_in_ticks', 'intervals', 'sorted_ticks')
     def __init__(self, clock_wrap=65535):
         self.clock_wrap = clock_wrap
         self.time_in_ticks = 0
@@ -172,7 +171,7 @@ class Scheduler:
             for i in self.intervals.values():
                 if i.next_tick >= self.clock_wrap:
                     i.next_tick = i.next_tick % self.clock_wrap
-                else: # the interval is already overdue
+                else: # interval overdue
                     i.next_tick = self.time_in_ticks - (unwrapped_time-i.next_tick)
                     
     def _get_tasks(self): # get runnable tasks
@@ -200,18 +199,17 @@ class Scheduler:
         assert len(self.intervals)>0
         while True:
             publishers = self._get_tasks()
-            start_ts = utime.ticks_ms()
+            start_ts = utime.time()
             for pub in publishers:
                 pub._observe()
                 if not pub.__subscribers__:
                     self._remove_task(pub)
             if len(self.intervals)==0:
                 break
-            end_ts = utime.ticks_ms()
-            sample_time = int(round(utime.ticks_diff(start_ts, end_ts)/1000))
-            if sample_time > 0:
-                self._advance_time(sample_time)
-            utime.sleep(self._get_next_sleep_interval())
-            actual_sleep_time = int(round(utime.ticks_diff(end_ts,
-                                                           utime.ticks_ms())/1000))
-            self._advance_time(actual_sleep_time)
+            end_ts = utime.time()
+            if end_ts > start_ts:
+                self._advance_time(end_ts-start_ts)
+            sleep = self._get_next_sleep_interval()
+            utime.sleep(sleep)
+            now = utime.time()
+            self._advance_time(now-end_ts if now>=end_ts else sleep)

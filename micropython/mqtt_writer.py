@@ -26,7 +26,6 @@ def mtpPub(topic, data):
   return  mtPacket(0b00110001, mtStr(topic), data)
 
 import socket
-import ubinascii
 
 def connect(name, host, port=1883):
   addr = socket.getaddrinfo(host, port)[0][4]
@@ -35,41 +34,53 @@ def connect(name, host, port=1883):
   s.connect(addr)
   s.send(mtpConnect(name))
   resp_header = s.recv(2)
-  print(ubinascii.hexlify(resp_header))
   resp_len = int(resp_header[1])
-  print("resp_len = %s" % resp_len)
-  resp_var = s.recv(resp_len)
-  print(ubinascii.hexlify(resp_var))
+  s.recv(resp_len)
   return s
-
-def publish(s, topic, data): 
-  s.send(mtpPub(topic, data))
-
-def disconnect(s):
-  print('Disconnecting...')
-  s.send(mtpDisconnect())
-  s.close()
 
 # end of code from uMQTT
 
 import json
+import utime
 
 class MQTTWriter:
-  __slots__ = ('socket', 'outbound_topic')
-  def __init__(self, name, host, port, outbound_topic):
-    self.outbound_topic = outbound_topic
-    print("Connecting to %s:%s" % (host, port))
-    self.socket = connect(name, host, port)
+  __slots__ = ('socket', 'topic', 'name', 'host', 'port')
+  def __init__(self, name, host, port, topic):
+    self.topic = topic
+    self.name = name
+    self.host = host
+    self.port = port
+    self._connect()
+
+  def _connect(self):
+    print("Connecting to %s:%s" % (self.host, self.port))
+    self.socket = connect(self.name, self.host, self.port)
     print("Connection successful")
 
   def on_next(self, x):
     data = bytes(json.dumps(x), 'utf-8')
-    publish(self.socket, self.outbound_topic, data)
+    while True:
+      try:
+        if self.socket==None:
+          self._connect()
+        self.socket.send(mtpPub(self.topic, data))
+        return
+      except Exception as e:
+        print("Error: %s" % repr(e))
+        try:
+          self.socket.close()
+        except:
+          pass
+        self.socket = None
+        utime.sleep(10)
 
   def on_completed(self):
-    print("Disconnecting from queue")
-    disconnect(self.socket)
+    print("mqtt_completed, disconnecting")
+    self.socket.send(mtpDisconnect())
+    self.socket.close()
 
   def on_error(self, e):
-    print("Disconnecting from queue due to error: %s" %e)
-    disconnect(self.socket)
+    print("mqtt on_error: %s, disconnecting" %e)
+    self.socket.send(mtpDisconnect())
+    self.socket.close()
+
