@@ -45,7 +45,10 @@ class SensorEventMapping(EventSpreadsheetMapping):
 
     def row_to_event(self, row):
         ts = float(row[0])
-        sensor_id = int(row[2])
+        try:
+            sensor_id = int(row[2])
+        except ValueError:
+            sensor_id = row[2] # does ot necessarily have to be an int
         val = float(row[3])
         return SensorEvent(ts=ts, sensor_id=sensor_id, val=val)
     
