@@ -1,4 +1,4 @@
-"""Run an observable that might block in a separate background thread
+"""Run an publisher that might block in a separate background thread
 """
 import time
 import unittest
@@ -38,7 +38,7 @@ class StopLoopAfter(DefaultSubscriber):
 
 
 class TestCase(unittest.TestCase):
-    def test_blocking_observable(self):
+    def test_blocking_publisher(self):
         o = TestPublisher()
         o.output()
         scheduler = Scheduler(asyncio.get_event_loop())

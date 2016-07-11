@@ -5,6 +5,7 @@ from antevents.base import *
 from utils import make_test_sensor
 
 import asyncio
+import unittest
 
 class CallAfter(DefaultSubscriber):
     def __init__(self, num_events, fn):
@@ -17,11 +18,17 @@ class CallAfter(DefaultSubscriber):
             print("calling fn %s" % self.fn)
             self.fn()
 
-sensor = make_test_sensor(1)
-sensor.subscribe(print)
-s = Scheduler(asyncio.get_event_loop())
-cancel_schedule = s.schedule_periodic(sensor, 1)
-sensor.subscribe(CallAfter(4, cancel_schedule))
-sensor.print_downstream()
-s.run_forever()
-print("got to end")
+class TestSchedulerCancel(unittest.TestCase):
+    def test_case(self):
+        sensor = make_test_sensor(1)
+        sensor.subscribe(print)
+        s = Scheduler(asyncio.get_event_loop())
+        cancel_schedule = s.schedule_periodic(sensor, 1)
+        sensor.subscribe(CallAfter(4, cancel_schedule))
+        sensor.print_downstream()
+        s.run_forever()
+        print("got to end")
+
+if __name__ == '__main__':
+    unittest.main()
+

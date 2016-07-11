@@ -41,7 +41,7 @@ $PYTHON test_transducer.py
 $PYTHON test_scheduler_cancel.py
 $PYTHON test_fatal_error_handling.py
 $PYTHON test_fatal_error_in_private_loop.py
-$PYTHON test_blocking_observable.py
+$PYTHON test_blocking_publisher.py
 $PYTHON test_solar_heater_scenario.py
 $PYTHON test_timeout.py
 $PYTHON test_blocking_subscriber.py

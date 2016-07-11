@@ -4,6 +4,7 @@ output topics based on the input value.
 """
 
 import asyncio
+import unittest
 
 from antevents.base import Publisher, DefaultSubscriber, Scheduler
 from utils import make_test_sensor
@@ -37,19 +38,26 @@ class SplitPublisher(Publisher, DefaultSubscriber):
     def __str__(self):
         return "SplitPublisher"
 
-sensor = make_test_sensor(1, stop_after_events=10)
-split= SplitPublisher()
-sensor.subscribe(split)
-split.subscribe(lambda x: print("above:%s" % x),
-                topic_mapping=('above','default'))
-split.subscribe(lambda x: print("below:%s" % x),
-                topic_mapping=('below', 'default'))
-split.subscribe(lambda x: print("within:%s" % x),
-                topic_mapping=('within', 'default'))
+class TestMultiplePubtopics(unittest.TestCase):
+    def test_case(self):
+        sensor = make_test_sensor(1, stop_after_events=10)
+        split= SplitPublisher()
+        sensor.subscribe(split)
+        split.subscribe(lambda x: print("above:%s" % x),
+                        topic_mapping=('above','default'))
+        split.subscribe(lambda x: print("below:%s" % x),
+                        topic_mapping=('below', 'default'))
+        split.subscribe(lambda x: print("within:%s" % x),
+                        topic_mapping=('within', 'default'))
 
-scheduler = Scheduler(asyncio.get_event_loop())
-scheduler.schedule_periodic(sensor, 1)
+        scheduler = Scheduler(asyncio.get_event_loop())
+        scheduler.schedule_periodic(sensor, 1)
 
-sensor.print_downstream()    
-scheduler.run_forever()
-print("that's all")
+        sensor.print_downstream()    
+        scheduler.run_forever()
+        print("that's all")
+
+if __name__ == '__main__':
+    unittest.main()
+
+        

@@ -5,6 +5,7 @@ we shut down cleanly and don't lose the error.
 import antevents.linq.output
 from antevents.base import Scheduler, Publisher, EventLoopPublisherMixin, FatalError
 
+import unittest
 import asyncio
 s = Scheduler(asyncio.get_event_loop())
 
@@ -22,19 +23,22 @@ class TestPublisher(Publisher, EventLoopPublisherMixin):
             self._dispatch_next(i)
             time.sleep(1)
         raise FatalError("testing the fatal error")
-    
-m = TestPublisher()
-m.output()
 
+class TestFatalErrorInPrivateLoop(unittest.TestCase):
+    def test_case(self):
+        m = TestPublisher()
+        m.output()
+        c = s.schedule_on_private_event_loop(m)
+        m.print_downstream()
+        try:
+            s.run_forever()
+        except FatalError:
+            print("we got the fatal error as expected")
+        else:
+            print("The event loop exited without throwing a fatal error!")
+            self.assertFalse(1, "The event loop exited without throwing a fatal error!")
 
-c = s.schedule_on_private_event_loop(m)
-m.print_downstream()
-try:
-    s.run_forever()
-except FatalError:
-    print("we got the fatal error as expected")
-else:
-    import sys
-    print("The event loop exited without throwing a fatal error!")
-    sys.exit(1)
+if __name__ == '__main__':
+    unittest.main()
+
 
