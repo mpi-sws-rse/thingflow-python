@@ -10,6 +10,8 @@ run:
   mosquitto_sub -t test
 """
 
+MQTT_PORT=1883
+
 import sys
 import os
 import os.path
@@ -82,7 +84,17 @@ class ValidationSubscriber:
                       "Got an unexpected on_error call with parameter: %s" % exc)
 
 
+def is_broker_running():
+    import subprocess
+    rc = subprocess.call("netstat -an | grep %d" % MQTT_PORT, shell=True)
+    if rc==0:
+        return True
+    else:
+        return False
 
+
+@unittest.skipUnless(is_broker_running(),
+                     "Did not find a broker listening on port %d" % MQTT_PORT)
 class TestEndToEnd(unittest.TestCase):           
     def test_publish_sensor(self):
         expected = [1, 2, 3, 4, 5]
@@ -90,7 +102,7 @@ class TestEndToEnd(unittest.TestCase):
         publisher = SensorPub(sensor, 'lux-1')
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
-        self.writer = MQTTWriter('antevents', 'localhost', 1883, 'test')
+        self.writer = MQTTWriter('antevents', 'localhost', MQTT_PORT, 'test')
         publisher.subscribe(self.writer)
         scheduler = Scheduler()
         scheduler.schedule_periodic(publisher, 1)
