@@ -161,22 +161,18 @@ class Publisher:
             raise InvalidTopicError("Invalid publish topic '%s', valid topics are %s" %
                                     (pub_topic,
                                      ', '.join([str(s) for s in self.__topics__])))
-        on_next_name = _on_next_name(sub_topic)
-        on_completed_name = _on_completed_name(sub_topic)
-        on_error_name = _on_error_name(sub_topic)
-        if not hasattr(subscriber, on_next_name) and callable(subscriber):
+        if not hasattr(subscriber, _on_next_name(sub_topic)) and callable(subscriber):
                 subscriber = CallableAsSubscriber(subscriber, topic=sub_topic)
-        functions = []
         try:
-            for m in (on_next_name, on_completed_name, on_error_name):
-                functions.append(getattr(subscriber, m))
+            subscription = \
+                _Subscription(on_next=getattr(subscriber, _on_next_name(sub_topic)),
+                              on_completed=getattr(subscriber, _on_completed_name(sub_topic)),
+                              on_error=getattr(subscriber, _on_error_name(sub_topic)),
+                              subscriber=subscriber,
+                              sub_topic=sub_topic)
         except AttributeError:
-            raise InvalidTopicError("Invalid subscribe topic '%s', no method '%s' on subscriber %s" %
-                                    (sub_topic, m, subscriber))
-        subscription = _Subscription(on_next=functions[0],
-                                     on_completed=functions[1],
-                                     on_error=functions[2], subscriber=subscriber,
-                                     sub_topic=sub_topic)
+            raise InvalidTopicError("Invalid subscribe topic '%s', missing method(s) on subscriber %s" %
+                                    (sub_topic, subscriber))
         new_subscribers = self.__subscribers__[pub_topic].copy()
         new_subscribers.append(subscription)
         self.__subscribers__[pub_topic] = new_subscribers
