@@ -538,7 +538,7 @@ class BlockingSubscriber:
     methods just queue up the call to run in the worker thread. 
 
     The actual implementation of the subscriber goes in the _on_next,
-    on_completed, and on_error methods. Note that we don't dispatch to separate
+    _on_completed, and _on_error methods. Note that we don't dispatch to separate
     methods for each topic. This is because the topic is likely to end up as
     just a message field rather than as a separate destination in the lower
     layers.
