@@ -12,17 +12,15 @@ import asyncio
 EVENTS = 4
 
 
-class TestPublisher(Publisher, IndirectPublisherMixin):
+class TestPublisher(Publisher, DirectPublisherMixin):
     def __init__(self):
         super().__init__()
         self.event_count = 0
 
-    def _observe_and_enqueue(self):
+    def _observe(self):
         self.event_count += 1
         time.sleep(0.5) # simulate a blocking call
         self._dispatch_next(self.event_count)
-        return True
-
         
 
 class StopLoopAfter(DefaultSubscriber):

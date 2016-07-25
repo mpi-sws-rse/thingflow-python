@@ -376,23 +376,11 @@ class Filter(Publisher, DefaultSubscriber):
 
 class DirectPublisherMixin:
     """This is the interface for publishers that should be directly
-    scheduled by the scheduler.
+    scheduled by the scheduler (e.g. through schedule_recurring(),
+    schedule_periodic(), or schedule_periodic_on_separate_thread).
     """
     def _observe(self):
         """Get an event and call the appropriate dispatch function.
-        Returns True if there is more data and False otherwise.
-        """
-        raise NotImplemented
-
-class IndirectPublisherMixin:
-    """This is the interface for publishers that should not invoke
-    the subscribers directly, but instead queue them. This is mainly for
-    publishers that must make a blocking call to get an event.
-    """
-
-    def _observe_and_enqueue(self):
-        """Get an event and call the appropriate dispatch function.
-        Returns True if there is more data and False otherwise.
         """
         raise NotImplemented
     
@@ -429,18 +417,15 @@ class IterableAsPublisher(Publisher, DirectPublisherMixin):
         try:
             event = self.iterable.__next__()
             self._dispatch_next(event)
-            return True
         except StopIteration:
             self._close()
             self._dispatch_completed()
-            return False
         except FatalError:
             self._close()
             raise
         except Exception as e:
             self._close()
             self._dispatch_error(e)
-            return False
 
     def _close(self):
         """This method is called when we stop the iteration, either due to
@@ -492,11 +477,8 @@ class FunctionIteratorAsPublisher(Publisher, DirectPublisherMixin):
                 if self.condition(self.value):
                     r = self.result_selector(self.value)
                     self._dispatch_next(r)
-                    return True
                 else:
                     self._dispatch_completed()
-                    return False
-               
             else:
                 if self.condition(self.value):
                     self.value = self.iterate(self.value)
@@ -504,10 +486,8 @@ class FunctionIteratorAsPublisher(Publisher, DirectPublisherMixin):
                     self._dispatch_next(r)
                 else: 
                     self._dispatch_completed()
-                    return False
         except Exception as e:
             self._dispatch_error(e)
-            return False
 
 def from_func(init, cond, iter, selector):
     return FunctionIteratorAsPublisher(init, cond, iter, selector)
@@ -639,7 +619,7 @@ class _ThreadForBlockingSubscriber(threading.Thread):
                 
 
 
-class _ThreadForIndirectPublisher(threading.Thread):
+class _ThreadForBlockingPublisher(threading.Thread):
     """Background thread for publishers that might block.
     """
     def __init__(self, publisher, interval, scheduler):
@@ -662,14 +642,14 @@ class _ThreadForIndirectPublisher(threading.Thread):
                 if self.stop_requested:
                     break
                 start = time.time()
-                self.publisher._observe_and_enqueue()
+                self.publisher._observe()
                 if len(self.publisher.__subscribers__)==0:
                     break
                 time_left = self.interval - (time.time() - start)
                 if time_left > 0 and (not self.stop_requested):
                     time.sleep(time_left)
         except Exception as e:
-            msg = "_observe_and_enqueue for %s exited with error: %s" % \
+            msg = "_observe for %s exited with error: %s" % \
                   (self.publisher, e)
             logger.exception(msg)
             def die(): # need to stop the scheduler in the main loop
@@ -811,11 +791,11 @@ class Scheduler:
 
     def schedule_periodic_on_separate_thread(self, publisher, interval):
         """Schedule an publisher to run in a separate thread. It should
-        implement the IndirectPublisherMixin.
+        implement the DirectPublisherMixin.
         Returns a thunk that can be used to unschedule the publisher, by
         requesting that the child thread stop.
         """
-        t = _ThreadForIndirectPublisher(publisher, interval, self)
+        t = _ThreadForBlockingPublisher(publisher, interval, self)
         self.active_schedules[publisher] = t._stop_loop
         self.event_loop.call_soon(t.start)
         return t._stop_loop
