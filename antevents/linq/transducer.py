@@ -33,12 +33,12 @@ def transduce(this, xform):
     :rtype: Publisher
     """
     def on_next(self, x):
-        try:
-            x_prime = xform.step(x)
-        except Exception as e:
-            self._dispatch_error(e)
-        else:
-            self._dispatch_next(x_prime)
+        # The base Filter class will handle any exceptions thrown by the
+        # step() call. Don't call _dispatch_error here(), as it will result
+        # in it being called twice. TODO: This is somewhat error prone - need to
+        # think through tis a bit more.
+        x_prime = xform.step(x)
+        self._dispatch_next(x_prime)
 
     def on_completed(self):
         xform.complete()

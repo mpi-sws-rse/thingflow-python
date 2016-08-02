@@ -23,5 +23,6 @@ def passthrough(this, writer):
         writer.on_error(e)
         self._dispatch_error(e)
 
-    return Filter(this, on_next=on_next, on_completed=on_completed, on_error=on_error)
+    return Filter(this, on_next=on_next, on_completed=on_completed,
+                  on_error=on_error, name='passthrough(%s)' % writer)
 
