@@ -30,7 +30,7 @@ class Publisher:
             sub_topic = 'default'
         else:
             (pub_topic, sub_topic) = topic_map
-        if sub_topic==None or sub_topic=='default':
+        if sub_topic=='default':
             dispatchnames = ('on_next', 'on_completed', 'on_error')
         else:
             dispatchnames = ('on_%s_next' % sub_topic,

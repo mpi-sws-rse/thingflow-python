@@ -142,7 +142,6 @@ class Publisher:
             self.__topics__ = set(topics)
         for topic in self.__topics__:
             self.__subscribers__[topic] = []
-        self.__unschedule_hook__ = None
         self.__enqueue_fn__ = None
         self.__closed_topics__ = []
 
@@ -161,27 +160,23 @@ class Publisher:
             raise InvalidTopicError("Invalid publish topic '%s', valid topics are %s" %
                                     (pub_topic,
                                      ', '.join([str(s) for s in self.__topics__])))
-        on_next_name = _on_next_name(sub_topic)
-        on_completed_name = _on_completed_name(sub_topic)
-        on_error_name = _on_error_name(sub_topic)
-        if not hasattr(subscriber, on_next_name) and callable(subscriber):
+        if not hasattr(subscriber, _on_next_name(sub_topic)) and callable(subscriber):
                 subscriber = CallableAsSubscriber(subscriber, topic=sub_topic)
-        functions = []
         try:
-            for m in (on_next_name, on_completed_name, on_error_name):
-                functions.append(getattr(subscriber, m))
+            subscription = \
+                _Subscription(on_next=getattr(subscriber, _on_next_name(sub_topic)),
+                              on_completed=getattr(subscriber, _on_completed_name(sub_topic)),
+                              on_error=getattr(subscriber, _on_error_name(sub_topic)),
+                              subscriber=subscriber,
+                              sub_topic=sub_topic)
         except AttributeError:
-            raise InvalidTopicError("Invalid subscribe topic '%s', no method '%s' on subscriber %s" %
-                                    (sub_topic, m, subscriber))
-        subscription = _Subscription(on_next=functions[0],
-                                     on_completed=functions[1],
-                                     on_error=functions[2], subscriber=subscriber,
-                                     sub_topic=sub_topic)
+            raise InvalidTopicError("Invalid subscribe topic '%s', missing method(s) on subscriber %s" %
+                                    (sub_topic, subscriber))
         new_subscribers = self.__subscribers__[pub_topic].copy()
         new_subscribers.append(subscription)
         self.__subscribers__[pub_topic] = new_subscribers
         def dispose():
-            # To remove the subsription, we replace the entire list with a copy
+            # To remove the subscription, we replace the entire list with a copy
             # that is missing the subscription. This allows dispose() to be
             # called within a _dispatch method. Otherwise, we get an error if
             # we attempt to change the list of subscribers while iterating over
@@ -191,19 +186,13 @@ class Publisher:
             self.__subscribers__[pub_topic] = new_subscribers
         return dispose
 
-    def _schedule(self, unschedule_hook, enqueue_fn):
-        """This method is used by the scheduler to specify a thunk to
-        be called when the publisher no longer needs to be scheduled.
-        Currently, this is only when the stream of events ends due to
-        a completion/error events or when the user explicitly cancels
-        the scheduling.
-
-        The scheduler can also specify an enqueue function to be called
+    def _schedule(self, enqueue_fn):
+        """This method is used by the scheduler to specify an enqueue function
+        to be called
         when dispatching events to the subscribers. This is used when the
         publisher runs in a separate thread from the main event loop. If
         that is not the case, the enqueue function should be None.
         """
-        self.__unschedule_hook__ = unschedule_hook
         self.__enqueue_fn__ = enqueue_fn
 
     def _close_topic(self, topic):
@@ -215,11 +204,6 @@ class Publisher:
         del self.__subscribers__[topic]
         self.__topics__.remove(topic)
         self.__closed_topics__.append(topic)
-        if len(self.__subscribers__)==0 and self.__unschedule_hook__ is not None:
-            print("Calling unschedule hook for %s" % self)
-            self.__unschedule_hook__()
-            self.__unschedule_hook__ = None
-            self.__enqueue_fn__ = None
 
     def _dispatch_next(self, x, topic=None):
         #print("Dispatch next called on %s, topic %s, msg %s" % (self, topic, str(x)))
@@ -542,7 +526,7 @@ class BlockingSubscriber:
     methods just queue up the call to run in the worker thread. 
 
     The actual implementation of the subscriber goes in the _on_next,
-    on_completed, and on_error methods. Note that we don't dispatch to separate
+    _on_completed, and _on_error methods. Note that we don't dispatch to separate
     methods for each topic. This is because the topic is likely to end up as
     just a message field rather than as a separate destination in the lower
     layers.
@@ -671,15 +655,15 @@ class _ThreadForIndirectPublisher(threading.Thread):
     def run(self):
         def enqueue_fn(fn, *args):
             self.scheduler.event_loop.call_soon_threadsafe(fn, *args)
-        self.publisher._schedule(unschedule_hook=None, enqueue_fn=enqueue_fn)
+        self.publisher._schedule(enqueue_fn=enqueue_fn)
             
         try:
             while True:
                 if self.stop_requested:
                     break
                 start = time.time()
-                more = self.publisher._observe_and_enqueue()
-                if not more:
+                self.publisher._observe_and_enqueue()
+                if len(self.publisher.__subscribers__)==0:
                     break
                 time_left = self.interval - (time.time() - start)
                 if time_left > 0 and (not self.stop_requested):
@@ -746,16 +730,17 @@ class Scheduler:
             self._remove_from_active_schedules(publisher)
         def run():
             assert publisher in self.active_schedules
-            more = publisher._observe()
-            if more and publisher in self.active_schedules:
+            publisher._observe()
+            more = len(publisher.__subscribers__)>0
+            if not more and publisher in self.active_schedules:
+                self._remove_from_active_schedules(publisher)
+            elif publisher in self.active_schedules:
                 handle = self.event_loop.call_later(interval, run)
                 self.active_schedules[publisher] = handle
-                publisher._schedule(cancel, enqueue_fn=None)
-            else:
-                assert more or (not (publisher in self.active_schedules))
+                publisher._schedule(enqueue_fn=None)
         handle = self.event_loop.call_later(interval, run)
         self.active_schedules[publisher] = handle
-        publisher._schedule(cancel, enqueue_fn=None)
+        publisher._schedule(enqueue_fn=None)
         return cancel
 
     def schedule_recurring(self, publisher):
@@ -780,16 +765,17 @@ class Scheduler:
             self._remove_from_active_schedules(publisher)
         def run():
             assert publisher in self.active_schedules
-            more = publisher._observe()
-            if more and publisher in self.active_schedules:
+            publisher._observe()
+            more = len(publisher.__subscribers__)>0
+            if not more and publisher in self.active_schedules:
+                self._remove_from_active_schedules(publisher)
+            elif publisher in self.active_schedules:
                 handle = self.event_loop.call_soon(run)
                 self.active_schedules[publisher] = handle
-                publisher._schedule(cancel, enqueue_fn=None)
-            else:
-                assert more or (not (publisher in self.active_schedules))
+                publisher._schedule(enqueue_fn=None)
         handle = self.event_loop.call_soon(run)
         self.active_schedules[publisher] = handle
-        publisher._schedule(cancel, enqueue_fn=None)
+        publisher._schedule(enqueue_fn=None)
         return cancel
     
     def schedule_on_private_event_loop(self, publisher):
@@ -802,9 +788,7 @@ class Scheduler:
             self.event_loop.call_soon_threadsafe(fn, *args)
         def thread_main():
             try:
-                # No unschedule hook is needed, as the publisher will exit
-                # the event loop when it is done.
-                publisher._schedule(unschedule_hook=None, enqueue_fn=enqueue_fn)
+                publisher._schedule(enqueue_fn=enqueue_fn)
                 # ok, lets run the event loop
                 publisher._observe_event_loop()
             except Exception as e:
@@ -855,7 +839,7 @@ class Scheduler:
             publisher._observe()
         handle = self.event_loop.call_later(interval, run)
         self.active_schedules[publisher] = handle
-        publisher._schedule(cancel, enqueue_fn=None)
+        publisher._schedule(enqueue_fn=None)
         return cancel
     
     def run_forever(self):
