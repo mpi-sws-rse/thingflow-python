@@ -1,6 +1,5 @@
 from antevents.base import BlockingSubscriber, Publisher, DirectPublisherMixin,\
-                           FatalError
-from antevents.sensor import SensorEvent
+                           FatalError, SensorEvent
 from antevents.adapters.generic import EventRowMapping
 
 import datetime

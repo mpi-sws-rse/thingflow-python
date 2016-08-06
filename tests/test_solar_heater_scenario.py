@@ -42,7 +42,6 @@ import antevents.linq.where
 import antevents.linq.first
 import antevents.linq.dispatch
 from antevents.base import *
-from antevents.sensor import SensorEvent
 from utils import ValidationSubscriber
 
 # constants

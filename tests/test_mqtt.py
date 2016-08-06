@@ -7,10 +7,9 @@ import unittest
 import antevents.linq.output
 import antevents.linq.json
 import antevents.linq.select
-from antevents.base import Scheduler, DefaultSubscriber
-from antevents.sensor import SensorEvent
+from antevents.base import Scheduler, DefaultSubscriber, SensorEvent
 from antevents.adapters.mqtt import MQTTReader, MQTTWriter
-from utils import make_test_sensor_from_vallist, ValidationSubscriber
+from utils import make_test_publisher_from_vallist, ValidationSubscriber
 
 try:
     import paho.mqtt
@@ -49,7 +48,7 @@ def mqtt_msg_to_unicode(m):
 class TestCase(unittest.TestCase):
     def test_mqtt(self):
         s = Scheduler(asyncio.get_event_loop())
-        sensor = make_test_sensor_from_vallist(1, sensor_data)
+        sensor = make_test_publisher_from_vallist(1, sensor_data)
         mqtt_writer = MQTTWriter('localhost', topics=[('bogus/bogus',0),])
         sensor.to_json().subscribe(mqtt_writer)
         s.schedule_periodic(sensor, 0.5)

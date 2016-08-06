@@ -5,7 +5,7 @@ import unittest
 from antevents.base import Scheduler, Filter
 import antevents.linq.timeout
 import antevents.linq.output
-from utils import make_test_sensor_from_vallist, ValidationSubscriber
+from utils import make_test_publisher_from_vallist, ValidationSubscriber
 
 def on_next_alternate(self, x):
     if self.keep_mode:
@@ -75,7 +75,7 @@ class TestTimeouts(unittest.TestCase):
         one second. It then supplies the previous event. The resulting
         output stream will show every other value repeated twice.
         """
-        sensor = make_test_sensor_from_vallist(1, sensor_values)
+        sensor = make_test_publisher_from_vallist(1, sensor_values)
         drop = DropPeriodic(sensor)
         scheduler = Scheduler(asyncio.get_event_loop())
         vo = ValidationSubscriber(expected_values, self)
@@ -93,7 +93,7 @@ class TestTimeouts(unittest.TestCase):
         good value is supplied when the timeout expires. Thus, we should see
         two good events, two repeats of the first event, two good events, etc.
         """
-        sensor = make_test_sensor_from_vallist(1, sensor_values)
+        sensor = make_test_publisher_from_vallist(1, sensor_values)
         drop = DropPeriodic(sensor, N=2)
         scheduler = Scheduler(asyncio.get_event_loop())
         vo = ValidationSubscriber(expected_values_multiple_timeouts, self)

@@ -499,6 +499,46 @@ def from_func(init, cond, iter, selector):
             super().__str__()
 
 
+# Define a default sensor event as a tuple of sensor id, timestamp, and value.
+SensorEvent = namedtuple('SensorEvent', ['sensor_id', 'ts', 'val'])
+
+def make_sensor_event(sensor, sample):
+    """Given a sensor object and a sample taken from that sensor,
+    return a SensorEvent tuple."""
+    return SensorEvent(sensor_id=sensor.sensor_id, ts=time.time(),
+                       val=sample)
+
+
+class SensorPub(Publisher, DirectPublisherMixin):
+    """Publisher that samples a sensor upon its observe call, creates
+    an event from the sample, and dispatches it forward. A sensor is just
+    an object that has a sensor_id property and a sample() method. If the
+    sensor wants to complete the stream, it should throw a StopIteration
+    exception.
+
+    By default, it generates SensorEvent instances. This behavior can be
+    changed by passing in a different function for make_event_fn.
+    """
+    def __init__(self, sensor, make_event_fn=make_sensor_event):
+        super().__init__()
+        self.sensor = sensor
+        self.make_event_fn = make_event_fn
+        
+    def _observe(self):
+        try:
+            self._dispatch_next(self.make_event_fn(self.sensor,
+                                                   self.sensor.sample()))
+        except FatalError:
+            raise
+        except StopIteration:
+            self._dispatch_completed()
+        except Exception as e:
+            self._dispatch_error(e)
+    
+    def __repr__(self):
+        return 'SensorPub(%s)' % repr(self.sensor)
+
+
 class BlockingSubscriber:
     """This implements a subscriber which may potential block when sending an
     event outside the system. The subscriber is run on a separate thread. We
@@ -723,6 +763,24 @@ class Scheduler:
         publisher._schedule(enqueue_fn=None)
         return cancel
 
+    def schedule_sensor(self, sensor, interval, *subscriber_sequence,
+                        make_event_fn=make_sensor_event):
+        """Create a publisher wrapper for the sensor and schedule it at the
+        specified interval. Compose the specified subscribers (and/or thunks)
+        into a sequence and subscribe the sequence to the sensor's publisher.
+        Returns a thunk that can be used to remove the publisher from the
+        scheduler.
+        """
+        publisher = SensorPub(sensor, make_event_fn=make_event_fn)
+        prev = publisher
+        for s in subscriber_sequence:
+            if callable(s):
+                prev = s(prev)
+            else:
+                publisher.subscribe(s)
+                prev = s
+        return self.schedule_periodic(publisher, interval)
+    
     def schedule_recurring(self, publisher):
         """Takes a DirectPublisherMixin and calls _observe() to get events. If
         _observe() returns True, the task is requeued on the event queue. This
@@ -800,6 +858,24 @@ class Scheduler:
         self.event_loop.call_soon(t.start)
         return t._stop_loop
 
+    def schedule_sensor_on_separate_thread(self, sensor, interval, *subscriber_sequence,
+                                           make_event_fn=make_sensor_event):
+        """Create a publisher wrapper for the sensor and schedule it at the
+        specified interval. Compose the specified subscribers (and/or thunks)
+        into a sequence and subscribe the sequence to the sensor's publisher.
+        Returns a thunk that can be used to remove the publisher from the
+        scheduler.
+        """
+        publisher = SensorPub(sensor, make_event_fn=make_event_fn)
+        prev = publisher
+        for s in subscriber_sequence:
+            if callable(s):
+                prev = s(prev)
+            else:
+                publisher.subscribe(s)
+                prev = s
+        return self.schedule_periodic_on_separate_thread(publisher, interval)
+    
     def schedule_later_one_time(self, publisher, interval):
         def cancel():
             print("canceling schedule of %s" % publisher)

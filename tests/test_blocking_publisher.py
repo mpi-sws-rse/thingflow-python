@@ -3,8 +3,10 @@
 import time
 import unittest
 
-import antevents.linq.output
-from antevents.base import*
+from antevents.base import Publisher, DirectPublisherMixin, DefaultSubscriber,\
+    Scheduler
+from antevents.linq.combinators import thunk, passthrough
+from antevents.linq.output import output
 from utils import ValidationSubscriber
 
 import asyncio
@@ -12,7 +14,7 @@ import asyncio
 EVENTS = 4
 
 
-class TestPublisher(Publisher, DirectPublisherMixin):
+class BlockingPublisher(Publisher, DirectPublisherMixin):
     def __init__(self):
         super().__init__()
         self.event_count = 0
@@ -34,10 +36,27 @@ class StopLoopAfter(DefaultSubscriber):
             print("Requesting stop of event loop")
             self.cancel_thunk()
 
+class BlockingSensor:
+    def __init__(self, sensor_id, stop_after):
+        self.sensor_id = sensor_id
+        self.stop_after = stop_after
+        self.event_count = 0
+
+    def sample(self):
+        if self.event_count==self.stop_after:
+            raise StopIteration
+        self.event_count += 1
+        time.sleep(0.5) # simulate a blocking call
+        return self.event_count
+
+    def __repr__(self):
+        return "BlockingSensor(%s, stop_after=%s)" % (self.sensor_id,
+                                                      self.stop_after)
+
 
 class TestCase(unittest.TestCase):
     def test_blocking_publisher(self):
-        o = TestPublisher()
+        o = BlockingPublisher()
         o.output()
         scheduler = Scheduler(asyncio.get_event_loop())
         c = scheduler.schedule_periodic_on_separate_thread(o, 1)
@@ -49,6 +68,17 @@ class TestCase(unittest.TestCase):
         scheduler.run_forever()
         print("that's it")
 
+    def test_blocking_sensor(self):
+        s = BlockingSensor(1, stop_after=EVENTS)
+        scheduler = Scheduler(asyncio.get_event_loop())
+        scheduler.schedule_sensor_on_separate_thread(s, 1,
+                                                     thunk(passthrough, output),
+                                                     ValidationSubscriber([i+1 for i in range(EVENTS)], self,
+                                                                          extract_value_fn=lambda v:v),
+                                                     make_event_fn=lambda s, v: v)
+        scheduler.run_forever()
+        print("that's it")
+        
 if __name__ == '__main__':
     unittest.main()
         

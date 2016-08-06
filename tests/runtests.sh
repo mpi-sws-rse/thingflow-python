@@ -85,6 +85,7 @@ rm -f *.err *.out
 echo ">>>>>>>>>>>>>>>>>>>> Starting Tests"
 
 runtest test_base
+runtest test_iterable_as_publisher
 runtest test_external_event_stream
 runtest test_multiple_pubtopics
 runtest test_linq

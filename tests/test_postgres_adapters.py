@@ -20,12 +20,13 @@ DEBUG_MODE = False
 import asyncio
 import unittest
 
-from utils import make_test_sensor_from_vallist, SensorEventValidationSubscriber
+from utils import ValueListSensor, SensorEventValidationSubscriber
 from antevents.base import Scheduler, DefaultSubscriber
 if PREREQS_AVAILABLE:
     from antevents.adapters.postgres import PostgresWriter, SensorEventMapping,\
         create_sensor_table, delete_sensor_table, PostgresReader
-import antevents.linq.output
+from antevents.linq.output import output
+from antevents.linq.combinators import parallel
 
 
 sensor_values = [1, 2, 3, 4, 5]
@@ -62,14 +63,13 @@ class TestCase(unittest.TestCase):
         conn.close()
         
     def test_publish_and_subscribe(self):
-        sensor = make_test_sensor_from_vallist(1, sensor_values)
+        sensor = ValueListSensor(1, sensor_values)
         sensor.output()
         scheduler = Scheduler(asyncio.get_event_loop())
         pg = PostgresWriter(scheduler, self.connect_string, self.mapping)
-        sensor.subscribe(pg)
         capture = CaptureSubscriber()
-        sensor.subscribe(capture)
-        scheduler.schedule_periodic(sensor, 0.5)
+        scheduler.schedule_sensor_periodic(sensor, 0.5,
+                                           parallel(pg, output, capture))
         scheduler.run_forever()
         print("finish writing to the database")
         row_source = PostgresReader(self.connect_string, self.mapping)
@@ -85,4 +85,3 @@ class TestCase(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
-o

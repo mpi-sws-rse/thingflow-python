@@ -1,7 +1,7 @@
 """Test that a fatal error causes the scheduler to exit.
 """
 from antevents.base import *
-from utils import make_test_sensor
+from utils import make_test_publisher
 
 import sys
 import asyncio
@@ -19,9 +19,9 @@ class DieAfter(DefaultSubscriber):
 
 class TestFatalErrorHandling(unittest.TestCase):
     def test_case(self):
-        sensor = make_test_sensor(1)
+        sensor = make_test_publisher(1)
         sensor.subscribe(print)
-        sensor2 = make_test_sensor(2)
+        sensor2 = make_test_publisher(2)
         sensor2.subscribe(print)
         s = Scheduler(asyncio.get_event_loop())
         s.schedule_periodic(sensor, 1)

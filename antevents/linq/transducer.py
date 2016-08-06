@@ -7,9 +7,8 @@ For those who speak automata, this is a Mealy machine.
 """
 from collections import deque
 
-from antevents.base import Publisher, Filter
+from antevents.base import Publisher, Filter, SensorEvent
 from antevents.internal import extensionmethod
-from antevents.sensor import SensorEvent
 
 
 class Transducer:

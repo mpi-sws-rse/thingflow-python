@@ -5,7 +5,7 @@ import unittest
 import asyncio
 import time
 from antevents.base import BlockingSubscriber, Scheduler
-from utils import make_test_sensor_from_vallist
+from utils import make_test_publisher_from_vallist
 
 values = [ 1, 2, 3, 4, 5 ]
 
@@ -40,7 +40,7 @@ class TestSubscriber(BlockingSubscriber):
 class TestCase(unittest.TestCase):
     def test(self):
         scheduler = Scheduler(asyncio.get_event_loop())
-        sensor = make_test_sensor_from_vallist(1, values)
+        sensor = make_test_publisher_from_vallist(1, values)
         scheduler.schedule_periodic(sensor, 1)
         blocking_subscriber = TestSubscriber(scheduler, values, self)
         sensor.subscribe(blocking_subscriber)

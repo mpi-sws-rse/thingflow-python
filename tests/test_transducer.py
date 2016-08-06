@@ -5,9 +5,11 @@ defined in antevents.linq.transducer
 
 import asyncio
 import unittest
-from utils import make_test_sensor_from_vallist, ValidationSubscriber
+from utils import ValueListSensor, ValidationSubscriber
 from antevents.base import Scheduler
-from antevents.linq.transducer import SensorSlidingMean
+from antevents.linq.transducer import SensorSlidingMean, transduce
+from antevents.linq.combinators import parallel, thunk
+from antevents.linq.output import output
 
 value_stream = [
     10,
@@ -34,14 +36,13 @@ mean_stream = [
 class TestCase(unittest.TestCase):
     def setUp(self):
         self.scheduler = Scheduler(asyncio.get_event_loop())
-        self.sensor = make_test_sensor_from_vallist(1, value_stream)
+        self.sensor = ValueListSensor(1, value_stream)
         
     def test_sensor_event_sliding_window(self):
-        o = self.sensor.transduce(SensorSlidingMean(4)).output()
         vs = ValidationSubscriber(mean_stream, self)
-        o.subscribe(vs)
-        self.sensor.print_downstream()
-        self.scheduler.schedule_recurring(self.sensor)
+        self.scheduler.schedule_sensor(self.sensor, 0.1,
+                                       thunk(transduce, SensorSlidingMean(4)),
+                                       parallel(vs, output))
         self.scheduler.run_forever()
         self.assertTrue(vs.completed)
 

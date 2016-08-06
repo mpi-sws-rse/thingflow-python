@@ -4,12 +4,54 @@ import time
 import random
 random.seed()
 
-from antevents.base import IterableAsPublisher, DefaultSubscriber, FatalError
-from antevents.sensor import SensorEvent
+from antevents.base import IterableAsPublisher, DefaultSubscriber, FatalError,\
+     SensorEvent
+
+class RandomSensor:
+    def __init__(self, sensor_id, mean=100.0, stddev=20.0, stop_after_events=None):
+        self.sensor_id = sensor_id
+        self.mean = mean
+        self.stddev = stddev
+        self.stop_after_events = stop_after_events
+        if stop_after_events is not None:
+            def generator():
+                for i in range(stop_after_events):
+                    yield random.gauss(mean, stddev)
+        else: # go on forever
+            def generator():
+                while True:
+                    yield random.gauss(mean, stddev)
+        self.generator = generator()
+
+    def sample(self):
+        return self.generator.__next__()
+
+    def __repr__(self):
+        if self.stop_after_events is None:
+            return 'RandomSensor(%s, mean=%s, stddev=%s)' % \
+                (self.sensor_id, self.mean, self.stddev)
+        else:
+            return 'RandomSensor(%s, mean=%s, stddev=%s, stop_after_events=%s)' % \
+                (self.sensor_id, self.mean, self.stddev, self.stop_after_events)
 
 
-def make_test_sensor(sensor_id, mean=100.0, stddev=20.0, stop_after_events=None):
-    """Here is an exmple test sensor that returns a random value"""
+class ValueListSensor:
+    def __init__(self, sensor_id, values):
+        self.sensor_id = sensor_id
+        def generator():
+            for v in values:
+                yield v
+        self.generator = generator()
+
+    def sample(self):
+        return self.generator.__next__()
+
+    def __repr__(self):
+        return 'ValueListSensor(%s)' % self.sensor_id
+
+
+def make_test_publisher(sensor_id, mean=100.0, stddev=20.0, stop_after_events=None):
+    """Here is an exmple test publisher that generates a random value"""
     if stop_after_events is not None:
         def generator():
             for i in range(stop_after_events):
@@ -25,8 +67,8 @@ def make_test_sensor(sensor_id, mean=100.0, stddev=20.0, stop_after_events=None)
     return o
 
 
-def make_test_sensor_from_vallist(sensor_id, values):
-    """Create a sensor that returns the list of values when sampled, but uses
+def make_test_publisher_from_vallist(sensor_id, values):
+    """Create a publisher that generates the list of values when sampled, but uses
     real timestamps.
     """
     def generator():

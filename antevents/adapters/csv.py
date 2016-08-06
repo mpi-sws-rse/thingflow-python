@@ -15,9 +15,8 @@ import logging
 import os.path
 logger = logging.getLogger(__name__)
 
-from antevents.base import DefaultSubscriber, Publisher, FatalError
+from antevents.base import DefaultSubscriber, Publisher, FatalError, SensorEvent
 from antevents.internal import extensionmethod
-from antevents.sensor import SensorEvent
 from antevents.adapters.generic import EventRowMapping, DirectReader
 
 class EventSpreadsheetMapping(EventRowMapping):

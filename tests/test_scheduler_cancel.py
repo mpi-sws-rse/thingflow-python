@@ -2,7 +2,7 @@
 should cleanly stop the scheduler.
 """
 from antevents.base import *
-from utils import make_test_sensor
+from utils import make_test_publisher
 
 import asyncio
 import unittest
@@ -20,7 +20,7 @@ class CallAfter(DefaultSubscriber):
 
 class TestSchedulerCancel(unittest.TestCase):
     def test_case(self):
-        sensor = make_test_sensor(1)
+        sensor = make_test_publisher(1)
         sensor.subscribe(print)
         s = Scheduler(asyncio.get_event_loop())
         cancel_schedule = s.schedule_periodic(sensor, 1)

@@ -7,7 +7,7 @@ import asyncio
 import unittest
 
 from antevents.base import Publisher, DefaultSubscriber, Scheduler
-from utils import make_test_sensor
+from utils import make_test_publisher
 import antevents.linq.where
 import antevents.linq.output
 
@@ -40,7 +40,7 @@ class SplitPublisher(Publisher, DefaultSubscriber):
 
 class TestMultiplePubtopics(unittest.TestCase):
     def test_case(self):
-        sensor = make_test_sensor(1, stop_after_events=10)
+        sensor = make_test_publisher(1, stop_after_events=10)
         split= SplitPublisher()
         sensor.subscribe(split)
         split.subscribe(lambda x: print("above:%s" % x),

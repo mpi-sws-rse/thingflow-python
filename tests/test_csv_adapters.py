@@ -8,11 +8,10 @@ import os
 import asyncio
 import datetime
 
-from antevents.base import Scheduler, IterableAsPublisher
-from antevents.adapters.csv import CsvReader, default_event_mapper, RollingCsvWriter
-from antevents.sensor import SensorEvent
+from antevents.base import Scheduler, IterableAsPublisher, SensorEvent
+from antevents.adapters.csv import CsvReader, default_event_mapper
 import antevents.linq.dispatch
-from utils import make_test_sensor, CaptureSubscriber, \
+from utils import make_test_publisher, CaptureSubscriber, \
     SensorEventValidationSubscriber
 
 NUM_EVENTS=5
@@ -31,7 +30,7 @@ class TestCases(unittest.TestCase):
         tf = NamedTemporaryFile(mode='w', delete=False)
         tf.close()
         try:
-            sensor = make_test_sensor(1, stop_after_events=NUM_EVENTS)
+            sensor = make_test_publisher(1, stop_after_events=NUM_EVENTS)
             capture = CaptureSubscriber()
             sensor.subscribe(capture)
             sensor.csv_writer(tf.name)

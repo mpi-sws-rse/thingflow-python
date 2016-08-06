@@ -5,7 +5,7 @@ import asyncio
 import unittest
 
 from antevents.base import *
-from utils import make_test_sensor
+from utils import make_test_publisher
 import antevents.linq.where
 import antevents.linq.output
 import antevents.linq 
@@ -23,7 +23,7 @@ class TestLinq(unittest.TestCase):
         """
         loop = asyncio.get_event_loop()
         
-        s = make_test_sensor(1, stop_after_events=5)
+        s = make_test_publisher(1, stop_after_events=5)
  
         t = s.skip(2).some(lambda x: x[2]>100)
 
