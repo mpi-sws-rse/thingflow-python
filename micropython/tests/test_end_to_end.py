@@ -29,14 +29,15 @@ import unittest
 from mqtt_writer import MQTTWriter
 
 class DummySensor(object):
-    def __init__(self, value_stream, sample_time=0):
+    def __init__(self, sensor_id, value_stream, sample_time=0):
+        self.sensor_id = sensor_id
         self.value_stream = value_stream
         self.idx = 0
         self.sample_time = sample_time
 
     def sample(self):
         if self.idx==len(self.value_stream):
-            raise StopSensor()
+            raise StopIteration()
         else:
             if self.sample_time > 0:
                 print("Sensor simulating a sample time of %d seconds with a sleep" %
@@ -98,8 +99,8 @@ def is_broker_running():
 class TestEndToEnd(unittest.TestCase):           
     def test_publish_sensor(self):
         expected = [1, 2, 3, 4, 5]
-        sensor = DummySensor(expected)
-        publisher = SensorPub(sensor, 'lux-1')
+        sensor = DummySensor('lux-1', expected)
+        publisher = SensorPub(sensor)
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
         self.writer = MQTTWriter('antevents', 'localhost', MQTT_PORT, 'test')

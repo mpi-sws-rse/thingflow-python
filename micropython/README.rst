@@ -73,8 +73,8 @@ sensor sampling and the sleeps between events happen outside it. The internal
 layer is responsible for determining sleep times and the set of tasks to
 sample at each wakeup.
 
-Time within the internal layer is measured in "ticks". The are likely seconds,
-but there is nothing in the scheduler depending on that. Fractional ticks are
+Time within the internal layer is measured in "ticks". Currently, one tick
+is 10 ms (1 "centisecond").  Fractional ticks are
 not allowed, to account for systems that cannot handle floating point sleep
 times. The scheduler tracks the current logical time in ticks and updates
 this based on elapsed time. To avoid issues with unexpected wrapping of the

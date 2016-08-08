@@ -90,21 +90,19 @@ class Publisher:
         # Get an event and call the appropriate dispatch function.
         raise NotImplemented
 
-class StopSensor(Exception):
-    pass
 
 class SensorPub(Publisher):
-    __slots__ = ('sensor', 'sensor_id')
-    def __init__(self, sensor, sensor_id):
+    __slots__ = ('sensor')
+    def __init__(self, sensor):
         super().__init__(None)
         self.sensor = sensor
-        self.sensor_id = sensor_id
     def _observe(self):
         try:
-            self._dispatch_next((self.sensor_id, utime.time(), self.sensor.sample()),)
+            v = self.sensor.sample()
+            self._dispatch_next((self.sensor.sensor_id, utime.time(), v),)
         except FatalError:
             raise
-        except StopSensor:
+        except StopIteration:
             self._dispatch_completed()
         except Exception as e:
             self._dispatch_error(e)
@@ -118,7 +116,7 @@ class _Interval:
 
 class Scheduler:
     __slots__ = ('clock_wrap', 'time_in_ticks', 'intervals', 'sorted_ticks')
-    def __init__(self, clock_wrap=65535):
+    def __init__(self, clock_wrap=1048576):
         self.clock_wrap = clock_wrap
         self.time_in_ticks = 0
         self.intervals = {}
@@ -184,13 +182,15 @@ class Scheduler:
         return sample_list
 
     def schedule_periodic(self, publisher, interval):
-        self._add_task(publisher, interval)
+        interval_ticks = int(round(interval*100))
+        assert interval_ticks>0
+        self._add_task(publisher, interval_ticks)
         def cancel():
             self._remove_task(publisher)
         return cancel
 
-    def schedule_sensor(self, sensor, sensor_id, interval, *subs):
-        task = SensorPub(sensor, sensor_id)
+    def schedule_sensor(self, sensor, interval, *subs):
+        task = SensorPub(sensor)
         for s in subs:
             task.subscribe(s)
         return self.schedule_periodic(task, interval)
@@ -199,17 +199,17 @@ class Scheduler:
         assert len(self.intervals)>0
         while True:
             publishers = self._get_tasks()
-            start_ts = utime.time()
+            start_ts = utime.ticks_ms()
             for pub in publishers:
                 pub._observe()
                 if not pub.__subscribers__:
                     self._remove_task(pub)
             if len(self.intervals)==0:
                 break
-            end_ts = utime.time()
+            end_ts = utime.ticks_ms()
             if end_ts > start_ts:
-                self._advance_time(end_ts-start_ts)
+                self._advance_time(int(round((end_ts-start_ts)/10)))
             sleep = self._get_next_sleep_interval()
-            utime.sleep(sleep)
-            now = utime.time()
-            self._advance_time(now-end_ts if now>=end_ts else sleep)
+            utime.sleep_ms(sleep*10)
+            now = utime.ticks_ms()
+            self._advance_time(int(round((now-end_ts)/10)) if now>=end_ts else sleep)

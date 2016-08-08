@@ -20,15 +20,16 @@ import unittest
 
 
 class DummySensor:
-    __slots__ = ('value_stream', 'sample_time', 'idx')
+    __slots__ = ('value_stream', 'sample_time', 'idx', 'sensor_id')
     def __init__(self, value_stream, sample_time=0):
         self.value_stream = value_stream
         self.idx = 0
         self.sample_time = sample_time
+        self.sensor_id = 1
 
     def sample(self):
         if self.idx==len(self.value_stream):
-            raise StopSensor()
+            raise StopIteration()
         else:
             if self.sample_time > 0:
                 print("Sensor simulating a sample time of %d seconds with a sleep" %
@@ -82,7 +83,7 @@ class TestBase(unittest.TestCase):
     def test_base(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
-        publisher = SensorPub(sensor, '1')
+        publisher = SensorPub(sensor)
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
         scheduler = Scheduler()
@@ -95,7 +96,7 @@ class TestBase(unittest.TestCase):
         sensor = DummySensor(expected)
         validator = ValidationSubscriber(expected, self)
         scheduler = Scheduler()
-        scheduler.schedule_sensor(sensor, 1, 1, validator)
+        scheduler.schedule_sensor(sensor, 1, validator)
         scheduler.run_forever()
         self.assertTrue(validator.completed)
 
@@ -104,12 +105,29 @@ class TestBase(unittest.TestCase):
         """
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected, sample_time=2)
-        publisher = SensorPub(sensor, 1)
+        publisher = SensorPub(sensor)
         validator = ValidationSubscriber(expected, self)
         publisher.subscribe(validator)
         scheduler = Scheduler()
         scheduler.schedule_periodic(publisher, 1)
         scheduler.run_forever()
+        self.assertTrue(validator.completed)
+
+    def test_subsecond_schedule_interval(self):
+        expected = [1, 2, 3, 4, 5]
+        sensor = DummySensor(expected)
+        publisher = SensorPub(sensor)
+        validator = ValidationSubscriber(expected, self)
+        publisher.subscribe(validator)
+        scheduler = Scheduler()
+        scheduler.schedule_periodic(publisher, 0.25)
+        start = time.time()
+        scheduler.run_forever()
+        stop = time.time()
+        elapsed = stop - start
+        print("elapsed was %s" % round(elapsed, 2))
+        self.assertTrue((elapsed>1.0) and (elapsed<2.0),
+                        "Elapsed time should be between 1 and 2 seconds, was %s" % elapsed)
         self.assertTrue(validator.completed)
         
         
