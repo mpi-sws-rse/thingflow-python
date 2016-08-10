@@ -4,8 +4,8 @@ This file contains the data capture part that runs on the Raspberry Pi.
 import sys
 import asyncio
 
-from antevents.base import Scheduler
-from antevents.adapters.rpi.lux_sensor import LuxSensor
+from antevents.base import Scheduler, SensorPub
+from antevents.sensors.rpi.lux_sensor import LuxSensor
 from antevents.adapters.rpi.gpio import GpioPinOut
 from antevents.adapters.mqtt import MQTTWriter
 import antevents.linq.select
@@ -15,7 +15,7 @@ BROKER_HOST='localhost'
             
 
 def setup(threshold=25):
-    lux = LuxSensor()
+    lux = SensorPub(LuxSensor())
     lux.subscribe(print)
     led = GpioPinOut()
     actions = lux.map(lambda event: event.val > threshold)

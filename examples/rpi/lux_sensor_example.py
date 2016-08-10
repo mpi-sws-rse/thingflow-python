@@ -6,8 +6,8 @@ import sys
 import asyncio
 import os.path
 
-from antevents.base import Scheduler
-from antevents.adapters.rpi.lux_sensor import LuxSensor
+from antevents.base import Scheduler, SensorPub
+from antevents.sensors.rpi.lux_sensor import LuxSensor
 from antevents.adapters.rpi.gpio import GpioPinOut
 import antevents.adapters.csv
 import antevents.linq.select
@@ -16,7 +16,7 @@ import antevents.linq.select
             
 
 def setup(threshold=25):
-    lux = LuxSensor()
+    lux = SensorPub(LuxSensor())
     lux.subscribe(print)
     lux.csv_writer(os.path.expanduser('~/lux.csv'))
     led = GpioPinOut()

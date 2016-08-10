@@ -12,9 +12,8 @@ import sys
 import asyncio
 import getpass
 
-from antevents.base import Scheduler
+from antevents.base import Scheduler, SensorEvent
 from antevents.adapters.mqtt import MQTTReader
-from antevents.sensor import SensorEvent
 from antevents.adapters.postgres import PostgresWriter, SensorEventMapping
 import antevents.linq.select
 import antevents.linq.json
