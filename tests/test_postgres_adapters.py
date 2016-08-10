@@ -64,12 +64,11 @@ class TestCase(unittest.TestCase):
         
     def test_publish_and_subscribe(self):
         sensor = ValueListSensor(1, sensor_values)
-        sensor.output()
         scheduler = Scheduler(asyncio.get_event_loop())
         pg = PostgresWriter(scheduler, self.connect_string, self.mapping)
         capture = CaptureSubscriber()
-        scheduler.schedule_sensor_periodic(sensor, 0.5,
-                                           parallel(pg, output, capture))
+        scheduler.schedule_sensor(sensor, 0.5,
+                                  parallel(pg, output, capture))
         scheduler.run_forever()
         print("finish writing to the database")
         row_source = PostgresReader(self.connect_string, self.mapping)
