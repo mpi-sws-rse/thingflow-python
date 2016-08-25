@@ -9,11 +9,11 @@ file.
 import random
 random.seed()
 import time
-from antevents.base import Publisher, DirectPublisherMixin
-from antevents.sensor import SensorEvent
+from antevents.base import SensorPub
 
-# A sensor is a special case of a publisher.
-class RandomSensor(Publisher, DirectPublisherMixin):
+
+
+class RandomSensor:
     def __init__(self, sensor_id, mean, stddev, stop_after):
         """This sensor will signal it is completed after the
         specified number of events have been sampled.
@@ -24,23 +24,14 @@ class RandomSensor(Publisher, DirectPublisherMixin):
         self.stddev = stddev
         self.events_left = stop_after
 
-    def _observe(self):
-        """Sample the sensor and dispatch to the subscribers.
-        """
+    def sample(self):
         if self.events_left>0:
-            evt = SensorEvent(self.sensor_id, time.time(),
-                              random.gauss(self.mean, self.stddev))
-            self._dispatch_next(evt)
+            data = random.gauss(self.mean, self.stddev)
             self.events_left -= 1
-            return True # more data potentially available
+            return data
         else:
-            # Reached the specified number of events. Tell the
-            # downstream we are done.
-            self._dispatch_completed()
-            # By returning False, we tell the scheduler we are really
-            # done and can be descheduled.
-            return False
-
+            raise StopIteration
+        
     def __str__(self):
         return "RandomSensor(%s, %s, %s)" % \
             (self.sensor_id, self.mean, self.stddev)
@@ -49,7 +40,7 @@ class RandomSensor(Publisher, DirectPublisherMixin):
 # Instantiate our sensor
 MEAN = 100
 STDDEV = 10
-sensor = RandomSensor(1, MEAN, STDDEV, stop_after=5)
+sensor = SensorPub(RandomSensor(1, MEAN, STDDEV, stop_after=5))
 
 
 # Now, we will define a pretend LED as a subscriber. Each time is it passed
