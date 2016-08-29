@@ -1,7 +1,6 @@
-from antevents.base import Publisher, Filter
-from antevents.internal import extensionmethod 
+from antevents.base import Publisher, Filter, filtermethod
 
-@extensionmethod(Publisher, alias="drop")
+@filtermethod(Publisher, alias="drop")
 def skip(this, count):
     """Bypasses a specified number of elements in an event sequence
     and then returns the remaining elements.

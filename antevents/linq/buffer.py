@@ -1,10 +1,9 @@
 import datetime
 
-from antevents.internal.extensionmethod import extensionmethod
-from antevents.base import Publisher, Filter, FatalError
+from antevents.base import Publisher, Filter, FatalError, filtermethod
 from antevents.linq.timeout import Timeout, EventWatcher
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def buffer_with_count(this, count):
     """
     """
@@ -112,7 +111,7 @@ class BufferEventUntilTimeoutOrCount(Filter):
         raise FatalError("%s.on_timeout_completed should not be called" % self)
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def buffer_with_time(this, interval, scheduler):
     if interval < 0:
         raise FatalError
@@ -122,7 +121,7 @@ def buffer_with_time(this, interval, scheduler):
  
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def buffer_with_time_or_count(this, interval, count):
     if interval <= 0:
         raise FatalError

@@ -1,8 +1,7 @@
 """Timeout-related publishers and filters.
 """
 from antevents.base import Publisher, DirectPublisherMixin, Filter,\
-                           FatalError
-from antevents.internal import extensionmethod
+                           FatalError, filtermethod
 
 class Timeout(Publisher, DirectPublisherMixin):
     """A publisher that can shedule timeouts for itself. When a
@@ -104,6 +103,6 @@ class SupplyEventWhenTimeout(Filter):
         """
         raise FatalError("%s.on_timeout_completed should not be called" % self)
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def supply_event_when_timeout(this, event_watcher, scheduler, interval):
     return SupplyEventWhenTimeout(this, event_watcher, scheduler, interval)

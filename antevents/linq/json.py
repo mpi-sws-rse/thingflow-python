@@ -1,9 +1,8 @@
 import json
 
-from antevents.base import Publisher, Filter
-from antevents.internal import extensionmethod
+from antevents.base import Publisher, Filter, filtermethod
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def to_json(this):
     """Convert the events in the stream to a json string.
     """
@@ -13,7 +12,7 @@ def to_json(this):
     return Filter(this, on_next=on_next, name='to_json')
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def from_json(this, constructor=None):
     """Parse a sequence of json strings. If constructor is specified, the
     parsed value is passed as *args to the constructor to return the actual

@@ -1,7 +1,6 @@
-from antevents.base import Publisher, Filter
-from antevents.internal import extensionmethod
+from antevents.base import Publisher, Filter, filtermethod
 
-@extensionmethod(Publisher, alias="aggregate")
+@filtermethod(Publisher, alias="aggregate")
 def reduce(self, accumulator, seed=None):
     """Applies an accumulator function over a sequence,
     returning the result of the aggregation as a single element in the
@@ -20,7 +19,7 @@ def reduce(self, accumulator, seed=None):
 
     return self.scan(accumulator, seed=seed).last()
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def scan(this, accumulator, seed=None):
     """Applies an accumulator function over an observable sequence and
     returns each intermediate result. The optional seed value is used as

@@ -5,7 +5,7 @@ import unittest
 
 from antevents.base import Publisher, DirectPublisherMixin, DefaultSubscriber,\
     Scheduler
-from antevents.linq.combinators import thunk, passthrough
+from antevents.linq.combinators import passthrough_fn
 from antevents.linq.output import output
 from utils import ValidationSubscriber
 
@@ -72,7 +72,7 @@ class TestCase(unittest.TestCase):
         s = BlockingSensor(1, stop_after=EVENTS)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_sensor_on_separate_thread(s, 1,
-                                                     thunk(passthrough, output),
+                                                     passthrough_fn(output),
                                                      ValidationSubscriber([i+1 for i in range(EVENTS)], self,
                                                                           extract_value_fn=lambda v:v),
                                                      make_event_fn=lambda s, v: v)

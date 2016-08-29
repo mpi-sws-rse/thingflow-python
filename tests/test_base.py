@@ -6,9 +6,9 @@ import unittest
 
 from antevents.base import Scheduler, SensorPub
 from utils import ValueListSensor, ValidationSubscriber
-import antevents.linq.where
-import antevents.linq.output
-from antevents.linq.combinators import thunk, passthrough
+from antevents.linq.where import where_fn
+from antevents.linq.output import output_fn
+from antevents.linq.combinators import passthrough_fn
 
 value_stream = [
     20,
@@ -60,9 +60,9 @@ class TestBaseScenario(unittest.TestCase):
         s = ValueListSensor(1, value_stream)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_sensor(s, 0.5,
-                                  thunk(antevents.linq.where.where, predicate),
-                                  thunk(passthrough, ValidationSubscriber(expected_stream, self)),
-                                  antevents.linq.output.output)
+                                  where_fn(predicate),
+                                  passthrough_fn(ValidationSubscriber(expected_stream, self)),
+                                  output_fn())
 
 
 if __name__ == '__main__':

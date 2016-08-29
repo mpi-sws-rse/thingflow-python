@@ -1,8 +1,7 @@
-from antevents.base import Publisher, Filter
-from antevents.internal import extensionmethod
+from antevents.base import Publisher, Filter, filtermethod
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def some(this, predicate=None):
     """Determines whether some element of an observable sequence satisfies a
     condition if present, else if some items are in the sequence.

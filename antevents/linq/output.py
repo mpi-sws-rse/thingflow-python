@@ -1,9 +1,8 @@
 from sys import stdout
 
-from antevents.internal.extensionmethod import extensionmethod
-from antevents.base import Publisher, Filter
+from antevents.base import Publisher, Filter, filtermethod
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def output(this, file=stdout):
     """Print each element of the sequence. Exceptions are printed
     as well. We don't call it print, because that will override the
@@ -17,7 +16,7 @@ def output(this, file=stdout):
         self._dispatch_error(e)
     return Filter(this, on_next, on_error=on_error, name="output")
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def output_count(this, file=stdout):
     """Just count the number of events and print out a banner with the
     total at the end.

@@ -1,8 +1,7 @@
-from antevents.base import Publisher, Filter
-from antevents.internal import extensionmethod
+from antevents.base import Publisher, Filter, filtermethod
 
 
-@extensionmethod(Publisher, alias="map")
+@filtermethod(Publisher, alias="map")
 def select(this, mapfun):
     """Returns a stream whose elements are the result of
     invoking the transform function on each element of source.

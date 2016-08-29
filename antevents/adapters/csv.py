@@ -15,8 +15,8 @@ import logging
 import os.path
 logger = logging.getLogger(__name__)
 
-from antevents.base import DefaultSubscriber, Publisher, FatalError, SensorEvent
-from antevents.internal import extensionmethod
+from antevents.base import DefaultSubscriber, Publisher, FatalError, \
+                           SensorEvent, filtermethod
 from antevents.adapters.generic import EventRowMapping, DirectReader
 
 class EventSpreadsheetMapping(EventRowMapping):
@@ -78,7 +78,7 @@ class CsvWriter(DefaultSubscriber):
     def __str__(self):
         return 'csv_writer(%s)' % self.filename
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def csv_writer(this, filename, mapper=default_event_mapper):
     """Write an event stream to a csv file. mapper is an
     instance of EventSpreadsheetMapping.
@@ -156,7 +156,7 @@ class RollingCsvWriter(Publisher, DefaultSubscriber):
         return 'rolling_csv_writer(%s)' % self.base_name
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def rolling_csv_writer(this, directory, basename, mapper=default_event_mapper,
                             get_date=default_get_date_from_event, sub_topic=None):
     """Write an event stream to csv files, rolling to a new file

@@ -1,6 +1,5 @@
 
-from antevents.base import Publisher, DefaultSubscriber
-from antevents.internal import extensionmethod
+from antevents.base import Publisher, DefaultSubscriber, filtermethod
 
 
 class Dispatcher(Publisher, DefaultSubscriber):
@@ -33,7 +32,7 @@ class Dispatcher(Publisher, DefaultSubscriber):
     def __str__(self):
         return 'dispatch'
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def dispatch(this, dispatch_rules):
     """Dispatch each incoming event to one output topic, according to
     the dispatch rules. The rules are a list of (predicate, topic) pairs.

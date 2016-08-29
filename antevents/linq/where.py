@@ -1,7 +1,6 @@
-from antevents.internal.extensionmethod import extensionmethod
-from antevents.base import Publisher, Filter
+from antevents.base import Publisher, Filter, filtermethod
 
-@extensionmethod(Publisher, alias="filter")
+@filtermethod(Publisher, alias="filter")
 def where(this, predicate):
     """Filter a stream based on the specified predicate function.
     """

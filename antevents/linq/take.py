@@ -1,5 +1,4 @@
-from antevents.base import Publisher, Filter, FatalError
-from antevents.internal import extensionmethod 
+from antevents.base import Publisher, Filter, FatalError, filtermethod
 
 class ArgumentOutOfRangeException(FatalError):
     pass
@@ -7,7 +6,7 @@ class ArgumentOutOfRangeException(FatalError):
 class SequenceContainsNoElementsError(FatalError):
     pass
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def take_last(this, count):
     """Takes a specified number of contiguous elements from the end of an observable sequence.
     This operator accumulates a buffer with a length enough to store
@@ -32,7 +31,7 @@ def take_last(this, count):
     return Filter(this, on_next=on_next, on_completed=on_completed)
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def last(this, default=None):
     value = [default]
     seen_value = [False]
@@ -49,7 +48,7 @@ def last(this, default=None):
             self._dispatch_completed()
     return Filter(this, on_next=on_next, on_completed=on_completed)
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def take(this, count):
     """Takes a specified number of contiguous elements in an event sequence.
     Keyword arguments:

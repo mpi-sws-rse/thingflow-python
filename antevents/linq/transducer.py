@@ -7,8 +7,7 @@ For those who speak automata, this is a Mealy machine.
 """
 from collections import deque
 
-from antevents.base import Publisher, Filter, SensorEvent
-from antevents.internal import extensionmethod
+from antevents.base import Publisher, Filter, SensorEvent, filtermethod
 
 
 class Transducer:
@@ -20,7 +19,7 @@ class Transducer:
     def complete(self):
         pass
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def transduce(this, xform):
     """Execute a transducer to transform the observable sequence.
 
