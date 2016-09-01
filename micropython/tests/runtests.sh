@@ -66,7 +66,7 @@ function runtest {
 	    fi # okrc
 	fi # skiprc
     else # non-zero return code
-	tail -l $TEST.err | grep -q 'FAILED'
+	tail -1 $TEST.err | grep -q 'FAILED'
 	failrc=$?
 	if [[ "$failrc" == "0" ]]; then
 	    echo "  FAILED"
