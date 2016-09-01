@@ -7,7 +7,7 @@ import asyncio
 import unittest
 from utils import ValueListSensor, ValidationSubscriber
 from antevents.base import Scheduler
-from antevents.linq.transducer import SensorSlidingMean, transduce_fn
+from antevents.linq.transducer import SensorSlidingMean, transduce
 from antevents.linq.combinators import parallel
 from antevents.linq.output import output
 
@@ -41,7 +41,7 @@ class TestCase(unittest.TestCase):
     def test_sensor_event_sliding_window(self):
         vs = ValidationSubscriber(mean_stream, self)
         self.scheduler.schedule_sensor(self.sensor, 0.1,
-                                       transduce_fn(SensorSlidingMean(4)),
+                                       transduce(SensorSlidingMean(4)),
                                        parallel(vs, output))
         self.scheduler.run_forever()
         self.assertTrue(vs.completed)

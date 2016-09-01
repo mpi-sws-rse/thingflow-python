@@ -378,9 +378,9 @@ def filtermethod(base, alias=None):
 
     The specified function is used in two places:
     1. A method with the specified name is added to the specified class
-       (usually the Publisher base class). This is for the fluent O-O API.
-    2. A function is created in the local namespace with the suffix _fn,
-       for use in the functional API.
+       (usually the Publisher base class). This is for the fluent (method
+       chaining) API.
+    2. A function is created in the local namespace for use in the functional API.
        This function does not take the publisher as an argument. Instead,
        it takes the remaining arguments and then returns a function which,
        when passed a publisher, subscribes to it and returns a filter.
@@ -414,12 +414,12 @@ def filtermethod(base, alias=None):
                 return func(this, *args, **kwargs)
             apply.__name__ = func.__name__
             return apply
-        _thunk.__name__ = func.__name__ + '_fn'
+        _thunk.__name__ = func.__name__
 
         for func_name in func_names:
             setattr(base, func_name, func)
-            func.__globals__[func_name + '_fn'] = _thunk
-        return func
+            func.__globals__[func_name] = _thunk
+        return _thunk
     return inner
 
 

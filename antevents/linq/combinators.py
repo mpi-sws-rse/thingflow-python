@@ -9,7 +9,8 @@ We use the term "thunk" for the special case where the linq-style function
 takes only a single input - the previous publisher/filter in the chain.
 The Scheduler.schedule_sensor() method and the functions below can accept
 thunks in place filters. If a linq-style filter F was defined using
-the @filtermethod decorator, then it has a thunk version named F_fn.
+the @filtermethod decorator, then calling the function directly (not as
+a method of a Publisher) returns a thunk.
 """
 
 from antevents.base import Publisher, filtermethod
