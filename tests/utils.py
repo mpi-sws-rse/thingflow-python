@@ -1,6 +1,7 @@
 """Common utilities for the tests
 """
 import time
+import unittest
 import random
 random.seed()
 
@@ -87,30 +88,43 @@ class ValidationSubscriber(DefaultSubscriber):
                  extract_value_fn=lambda event:event.val):
         self.expected_stream = expected_stream
         self.next_idx = 0
-        self.test_case = test_case
+        self.test_case = test_case # this can be either a method or a class
         self.extract_value_fn = extract_value_fn
         self.completed = False
+        self.name = "ValidationSubscriber(%s)" % \
+                      test_case.__class__.__name__ \
+                    if isinstance(test_case, unittest.TestCase) \
+                    else "ValidationSubscriber(%s.%s)" % \
+                      (test_case.__self__.__class__.__name__,
+                       test_case.__name__)
 
     def on_next(self, x):
-        tc = self.test_case
-        tc.assertLess(self.next_idx, len(self.expected_stream),
-                      "Got an event after reaching the end of the expected stream")
+        tcls = self.test_case if isinstance(self.test_case, unittest.TestCase)\
+               else self.test_case.__self__
+        tcls.assertLess(self.next_idx, len(self.expected_stream),
+                        "Got an event after reaching the end of the expected stream")
         expected = self.expected_stream[self.next_idx]
         actual = self.extract_value_fn(x)
-        tc.assertEqual(actual, expected,
-                       "Values for element %d of event stream mismatch" % self.next_idx)
+        tcls.assertEqual(actual, expected,
+                       "Values for element %d of event stream mismatch" %
+                         self.next_idx)
         self.next_idx += 1
 
     def on_completed(self):
-        tc = self.test_case
-        tc.assertEqual(self.next_idx, len(self.expected_stream),
-                       "Got on_completed() before end of stream")
+        tcls = self.test_case if isinstance(self.test_case, unittest.TestCase)\
+               else self.test_case.__self__
+        tcls.assertEqual(self.next_idx, len(self.expected_stream),
+                         "Got on_completed() before end of stream")
         self.completed = True
 
     def on_error(self, exc):
-        tc = self.test_case
-        tc.assertTrue(False,
-                      "Got an unexpected on_error call with parameter: %s" % exc)
+        tcls = self.test_case if isinstance(self.test_case, unittest.TestCase)\
+               else self.test_case.__self__
+        tcls.assertTrue(False,
+                        "Got an unexpected on_error call with parameter: %s" %
+                        exc)
+    def __repr__(self):
+        return self.name
 
         
 class SensorEventValidationSubscriber(DefaultSubscriber):

@@ -43,7 +43,7 @@ class TestBaseScenario(unittest.TestCase):
         p = SensorPub(s)
         w = p.where(predicate)
         w.output()
-        vo = ValidationSubscriber(expected_stream, self)
+        vo = ValidationSubscriber(expected_stream, self.test_where)
         w.subscribe(vo)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_periodic(p, 0.5) # sample twice every second
@@ -51,18 +51,23 @@ class TestBaseScenario(unittest.TestCase):
         scheduler.run_forever()
         self.assertTrue(vo.completed,
                         "Schedule exited before validation observer completed")
-        self.assertTrue(vo.completed)
         print("That's all folks")
 
     def test_schedule_sensor(self):
         """In this version, we pass the sensor directly to the scheduler and use
         a functional style to compose the filters"""
         s = ValueListSensor(1, value_stream)
+        vo = ValidationSubscriber(expected_stream, self.test_schedule_sensor)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_sensor(s, 0.5,
                                   where(predicate),
-                                  passthrough(ValidationSubscriber(expected_stream, self)),
+                                  passthrough(vo),
                                   output())
+        scheduler.run_forever()
+        self.assertTrue(vo.completed,
+                        "Schedule exited before validation observer completed")
+        print("That's all folks")
+        
 
 
 if __name__ == '__main__':
