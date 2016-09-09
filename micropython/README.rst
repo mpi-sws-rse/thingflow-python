@@ -3,7 +3,8 @@ Ant Events Micropython Port
 ===========================
 
 This is a port of Ant Events to Micropython_, a bare-metal implementation of
-Python 3 for small processors. This port has been tested on the ESP8266_.
+Python 3 for small processors. This port has been tested on the ESP8266_
+using version 1.8.3 of Micropython.
 
 Micropython has only a subset of the libraries that come with the standard
 CPython implementation. For example, an event library, threading, and even
@@ -53,6 +54,11 @@ Long variable names for keyword arguments
 There is a bug in Micropython where keyword argument names longer than 10
 characters can result in a incorrect exception saying that keyword arguments
 are not implemented. I think this is related to Micropython issue #1998.
+
+Sensors
+=======
+Sensor code for the Micropython port are in the ``sensors`` subdirectory.
+See the ``README.rst`` file in that directory for details.
 
 Design Notes
 =============

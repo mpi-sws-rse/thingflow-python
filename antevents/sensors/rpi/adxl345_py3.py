@@ -1,12 +1,18 @@
+"""Sensor for the ADXL345 accelerometer.
+Code originally from https://github.com/pimoroni/adxl345-python,
+with edits for AntEvents"""
+
+#
 # ADXL345 Python library for Raspberry Pi 
 #
 # author:  Jonathan Williamson
-# license: BSD, see LICENSE.txt included in this package
+# license: BSD, see LICENSE.txt included in the original version.
 # 
 # This is a Raspberry Pi Python implementation to help you get started with
 # the Adafruit Triple Axis ADXL345 breakout board:
 # http://shop.pimoroni.com/products/adafruit-triple-axis-accelerometer
 #
+# Changes for AntEvents:
 # Minor edit to print statement for Python 3 and AntEvents API changes (need sensor_id)
 
 import smbus

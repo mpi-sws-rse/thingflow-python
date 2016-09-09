@@ -1,4 +1,6 @@
 """
+This is a sensor for the tsl2591 lux (light level) sensor breakout board
+from Adafruit. It is a thin layer on top of python-tsl2591.
 To install the tsl2591 library:
   sudo apt-get install build-essential libi2c-dev i2c-tools python-dev libffi-dev
   sudo /usr/bin/pip install cffi
