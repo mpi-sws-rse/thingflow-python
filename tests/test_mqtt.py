@@ -1,9 +1,23 @@
 """Test mqtt broker
+
+In addition to testing mqtt publish/subscribe functionality, this runs a
+publisher that has its own event loop.
+
+To run the test, you will need the paho-mqtt client and the mosquitto broker.
+You can get the client via:
+
+    pip install paho-mqtt
+
+On Debian-based linuxes, you can get the broker via:
+
+    sudo apt-get install mosquitto
+
+We assume that the broker is listening on localhost:1883.
+
 """
 
-"""Run an observable that has its own event loop.
-"""
 import unittest
+import sys
 import antevents.linq.output
 import antevents.linq.json
 import antevents.linq.select
@@ -48,9 +62,10 @@ def is_broker_running():
         return False
 
 
-@unittest.skipUnless(MQTT_CLIENT_AVAILABLE and is_broker_running(),
-                     "MQTT client not installed or broker not running on port %d" %
-                     MQTT_PORT)
+@unittest.skipUnless(MQTT_CLIENT_AVAILABLE,
+                     "MQTT client not installed for python at %s" % sys.executable)
+@unittest.skipUnless(is_broker_running(),
+                     "MQTT broker not running on port %d" % MQTT_PORT)
 class TestCase(unittest.TestCase):
     def test_mqtt(self):
         loop = asyncio.get_event_loop()
