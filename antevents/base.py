@@ -7,6 +7,10 @@ The key abstractions are:
 
  * Publisher   - a publisher is a data source that puts out a stream of events
                  for each topic it defines.
+ * Sensor      - an object that is (indirectly) connected to the physical world.
+                 It can provide its current value through a sample() method.
+                 Sensors can be turned into publishers by wrapping them with
+                 the SensorPub class.
  * Subscriber  - a data sink that receives a stream of events for each topic it
                  defines.
  * Filter      - a component that is both a publisher and a subscriber. Filters

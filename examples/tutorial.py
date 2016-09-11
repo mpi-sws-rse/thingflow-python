@@ -1,6 +1,5 @@
 """
-This is an example antevents program that is described in the top level README
-file.
+This is an example antevents program that is described in tutorial.rst.
 """
 
 # First, let's define a sensor that generates a random number each time
