@@ -49,6 +49,9 @@ class MockMQTTClient(object):
         time.sleep(timeout)
         return 0
 
+    def disconnect(self):
+        pass
+
 class MQTTWriter(DefaultSubscriber):
     """Subscribes to internal events and pushes them out to MQTT.
     The topics parameter is a list of (topic, qos) pairs.
@@ -102,7 +105,7 @@ class MQTTWriter(DefaultSubscriber):
                 print("ValueError raised for topic %s: msg %s" % (topic, msg))
 
     def on_error(self, e):
-        pass
+        self.client.disconnect()
  
     def on_completed(self):
         self.client.disconnect()
@@ -174,6 +177,7 @@ class MQTTReader(Publisher, EventLoopPublisherMixin):
             if result != 0:
                 self._connect()
         self.stop_requested = False
+        self.client.disconnect()
         print("Stopped private event loop")
             
     def _stop_loop(self):

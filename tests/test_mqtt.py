@@ -17,14 +17,8 @@ try:
 except ImportError:
     MQTT_CLIENT_AVAILABLE = False
 
-try:
-    from config_for_tests import MQTT_BROKER_AVAILABLE
-except ImportError:
-    MQTT_BROKER_AVAILABLE = False
-
-
-MQTT_AVAILABLE = MQTT_CLIENT_AVAILABLE and MQTT_BROKER_AVAILABLE
-
+MQTT_PORT=1883
+    
 import asyncio
 
 sensor_data = [1, 2, 3, 4, 5]
@@ -44,10 +38,23 @@ def mqtt_msg_to_unicode(m):
     v = (m.payload).decode("utf-8")
     return v
 
-@unittest.skipUnless(MQTT_AVAILABLE, "MQTT client api not installed")
+
+def is_broker_running():
+    import subprocess
+    rc = subprocess.call("netstat -an | grep %d" % MQTT_PORT, shell=True)
+    if rc==0:
+        return True
+    else:
+        return False
+
+
+@unittest.skipUnless(MQTT_CLIENT_AVAILABLE and is_broker_running(),
+                     "MQTT client not installed or broker not running on port %d" %
+                     MQTT_PORT)
 class TestCase(unittest.TestCase):
     def test_mqtt(self):
-        s = Scheduler(asyncio.get_event_loop())
+        loop = asyncio.get_event_loop()
+        s = Scheduler(loop)
         sensor = make_test_publisher_from_vallist(1, sensor_data)
         mqtt_writer = MQTTWriter('localhost', topics=[('bogus/bogus',0),])
         sensor.to_json().subscribe(mqtt_writer)
@@ -63,6 +70,7 @@ class TestCase(unittest.TestCase):
         mqtt_reader.print_downstream()
         sensor.print_downstream()
         s.run_forever()
+        loop.stop()
         self.assertTrue(vs.completed)
         print("that's it")
 
