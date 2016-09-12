@@ -34,18 +34,15 @@ class DirectReader(Publisher, DirectPublisherMixin):
         try:
             row = self.iterable.__next__()
             self._dispatch_next(self.mapper.row_to_event(row))
-            return True
         except StopIteration:
             self._close()
             self._dispatch_completed()
-            return False
         except FatalError:
             self._close()
             raise
         except Exception as e:
             self._close()
             self._dispatch_error(e)
-            return False
 
     def _close(self):
         """This method is called when we stop the iteration, either due to
