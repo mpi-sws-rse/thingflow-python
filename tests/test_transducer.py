@@ -42,7 +42,7 @@ class TestCase(unittest.TestCase):
         vs = ValidationSubscriber(mean_stream, self)
         self.scheduler.schedule_sensor(self.sensor, 0.1,
                                        transduce(SensorSlidingMean(4)),
-                                       parallel(vs, output))
+                                       parallel(vs, output()))
         self.scheduler.run_forever()
         self.assertTrue(vs.completed)
 

@@ -1,6 +1,4 @@
-26
 """Demo of lux sensor and led from raspberry pi
-
 """
 import sys
 import asyncio

@@ -72,10 +72,10 @@ class TestCase(unittest.TestCase):
         s = BlockingSensor(1, stop_after=EVENTS)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_sensor_on_separate_thread(s, 1,
-                                                     passthrough(output),
-                                                     ValidationSubscriber([i+1 for i in range(EVENTS)], self,
-                                                                          extract_value_fn=lambda v:v),
-                                                     make_event_fn=lambda s, v: v)
+            passthrough(output()),
+            ValidationSubscriber([i+1 for i in range(EVENTS)], self,
+                                 extract_value_fn=lambda v:v),
+            make_event_fn=lambda s, v: v)
         scheduler.run_forever()
         print("that's it")
         

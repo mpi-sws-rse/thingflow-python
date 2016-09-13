@@ -17,7 +17,6 @@ class RandomSensor:
         """This sensor will signal it is completed after the
         specified number of events have been sampled.
         """
-        super().__init__()
         self.sensor_id = sensor_id
         self.mean = mean
         self.stddev = stddev

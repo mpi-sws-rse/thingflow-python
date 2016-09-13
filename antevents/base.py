@@ -372,6 +372,46 @@ class Filter(Publisher, DefaultSubscriber):
             return super().__str__()
 
 
+
+_THUNK_ERRMSG1=\
+"""Passed in a thunk builder %s when expecting a thunk.
+This usually happens when a linq-style function is passed in unevaluated.
+You need to call the function first, even if it takes no arguments.
+"""
+
+_THUNK_ERRMSG2=\
+"""Passed in %s when expecting a thunk.
+Perhaps you passed in an arbitrary function instead of a thunk.
+Or, if you are writing your own linq function combinator, call
+_make_thunk() on the thunk you create.
+"""
+
+def _check_thunk(t):
+    assert not isinstance(t, _ThunkBuilder), _THUNK_ERRMSG1 % t
+    assert hasattr(t, '__thunk__'), _THUNK_ERRMSG2 % t
+
+def _make_thunk(t):
+    setattr(t, '__thunk__', True)
+
+
+class _ThunkBuilder:
+    def __init__(self, func):
+        self.func = func
+        self.__name__ = func.__name__
+
+    def __call__(self, *args, **kwargs):
+        if len(args)==0 and len(kwargs)==0:
+            _make_thunk(self.func)
+            return self.func
+        def apply(this):
+            return self.func(this, *args, **kwargs)
+        apply.__name__ = self.__name__
+        _make_thunk(apply)
+        return apply
+    def __repr__(self):
+        return "_ThunkBuilder(%s)" % self.__name__
+
+
 def filtermethod(base, alias=None):
     """Function decorator that creates a linq-style filter out of the
     specified function. As described in the antevents.linq documentation,
@@ -411,15 +451,10 @@ def filtermethod(base, alias=None):
             aliases = alias if isinstance(alias, list) else [alias]
             func_names += aliases
 
-        def _thunk(*args, **kwargs):
-            if len(args)==0 and len(kwargs)==0:
-                return func
-            def apply(this):
-                return func(this, *args, **kwargs)
-            apply.__name__ = func.__name__
-            return apply
-        _thunk.__name__ = func.__name__
+        _thunk = _ThunkBuilder(func)
 
+        # For the primary name and all aliases, set the name on the
+        # base class as well as in the local namespace.
         for func_name in func_names:
             setattr(base, func_name, func)
             func.__globals__[func_name] = _thunk
@@ -817,7 +852,8 @@ class Scheduler:
         return cancel
 
     def schedule_sensor(self, sensor, interval, *subscriber_sequence,
-                        make_event_fn=make_sensor_event):
+                        make_event_fn=make_sensor_event,
+                        print_downstream=False):
         """Create a publisher wrapper for the sensor and schedule it at the
         specified interval. Compose the specified subscribers (and/or thunks)
         into a sequence and subscribe the sequence to the sensor's publisher.
@@ -828,10 +864,13 @@ class Scheduler:
         prev = publisher
         for s in subscriber_sequence:
             if callable(s):
+                _check_thunk(s)
                 prev = s(prev)
             else:
-                publisher.subscribe(s)
+                prev.subscribe(s)
                 prev = s
+        if print_downstream:
+            publisher.print_downstream() # just for debugging
         return self.schedule_periodic(publisher, interval)
     
     def schedule_recurring(self, publisher):
