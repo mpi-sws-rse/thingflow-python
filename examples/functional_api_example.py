@@ -6,7 +6,7 @@ import asyncio
 import random
 random.seed()
 
-from antevents.base import SensorPub, DefaultSubscriber, Scheduler
+from antevents.base import DefaultSubscriber, Scheduler
 from antevents.linq.output import output
 from antevents.linq.select import map
 from antevents.adapters.csv import csv_writer
@@ -26,10 +26,8 @@ class DummyLuxSensor:
         if self.events_left>0:
             data = random.gauss(self.mean, self.stddev)
             self.events_left -= 1
-            print("sample %s" % data) # XXX
             return data
         else:
-            print("stopping sensor") # XXX
             raise StopIteration
         
     def __repr__(self):
@@ -55,6 +53,7 @@ scheduler.schedule_sensor(lux, 1.0,
                           passthrough(output()),
                           passthrough(csv_writer('/tmp/lux.csv')),
                           map(lambda event:event.val > THRESHOLD),
-                          DummyLed())
+                          passthrough(lambda v: print('ON' if v else 'OFF')),
+                          DummyLed(), print_downstream=True)
 scheduler.run_forever()
 print("That's all folks")

@@ -372,29 +372,16 @@ class Filter(Publisher, DefaultSubscriber):
             return super().__str__()
 
 
-
-_THUNK_ERRMSG1=\
-"""Passed in a thunk builder %s when expecting a thunk.
-This usually happens when a linq-style function is passed in unevaluated.
-You need to call the function first, even if it takes no arguments.
-"""
-
-_THUNK_ERRMSG2=\
-"""Passed in %s when expecting a thunk.
-Perhaps you passed in an arbitrary function instead of a thunk.
-Or, if you are writing your own linq function combinator, call
-_make_thunk() on the thunk you create.
-"""
-
-def _check_thunk(t):
-    assert not isinstance(t, _ThunkBuilder), _THUNK_ERRMSG1 % t
-    assert hasattr(t, '__thunk__'), _THUNK_ERRMSG2 % t
+def _is_thunk(t):
+    return hasattr(t, '__thunk__')
 
 def _make_thunk(t):
     setattr(t, '__thunk__', True)
 
-
 class _ThunkBuilder:
+    """This is used to create a thunk from a linq-style
+    method.
+    """
     def __init__(self, func):
         self.func = func
         self.__name__ = func.__name__
@@ -411,6 +398,23 @@ class _ThunkBuilder:
     def __repr__(self):
         return "_ThunkBuilder(%s)" % self.__name__
 
+def _subscribe_thunk(prev, thunk):
+    """Subscribe the thunk to the previous in the chain. Handles
+    all the cases where we might be given a filter, a thunk,
+    a thunk builder (unevaluated linq function), or a bare callable."""
+    if callable(thunk):
+        if _is_thunk(thunk):
+            return thunk(prev)
+        elif isinstance(thunk, _ThunkBuilder):
+            real_thunk = thunk()
+            assert _is_thunk(real_thunk)
+            return real_thunk(prev)
+        else: # bare callable, will be wrapped by the subscribe method
+            prev.subscribe(thunk)
+            return None
+    else:
+        return prev.subscribe(thunk) # assumed to be a filter
+    
 
 def filtermethod(base, alias=None):
     """Function decorator that creates a linq-style filter out of the
@@ -825,7 +829,7 @@ class Scheduler:
             self.stop()
 
     def schedule_periodic(self, publisher, interval):
-        """Returns a thunk that can be used to remove the publisher from the
+        """Returns a callable that can be used to remove the publisher from the
         scheduler.
         """
         def cancel():
@@ -863,12 +867,9 @@ class Scheduler:
         publisher = SensorPub(sensor, make_event_fn=make_event_fn)
         prev = publisher
         for s in subscriber_sequence:
-            if callable(s):
-                _check_thunk(s)
-                prev = s(prev)
-            else:
-                prev.subscribe(s)
-                prev = s
+            assert prev,\
+                "attempted to compose a terminal subscriber/thunk in a non-final position"
+            prev = _subscribe_thunk(prev, s)
         if print_downstream:
             publisher.print_downstream() # just for debugging
         return self.schedule_periodic(publisher, interval)
@@ -881,7 +882,7 @@ class Scheduler:
         that runs in a separate thread (e.g. schedule_recuring_separate_thread()
         or schedule_periodic_separate_thread()).
 
-        Returns a thunk that can be used to remove the publisher from the
+        Returns a callable that can be used to remove the publisher from the
         scheduler.
         """
         def cancel():
@@ -911,7 +912,7 @@ class Scheduler:
     def schedule_on_private_event_loop(self, publisher):
         """Schedule an publisher that has its own event loop on another thread.
         The publisher is assumed to implement EventLoopPublisherMixin.
-        Returns a thunk that can be used to unschedule the publisher, by
+        Returns a callable that can be used to unschedule the publisher, by
         requesting that the event loop stop.
         """
         def enqueue_fn(fn, *args):
@@ -942,7 +943,7 @@ class Scheduler:
     def schedule_periodic_on_separate_thread(self, publisher, interval):
         """Schedule an publisher to run in a separate thread. It should
         implement the DirectPublisherMixin.
-        Returns a thunk that can be used to unschedule the publisher, by
+        Returns a callable that can be used to unschedule the publisher, by
         requesting that the child thread stop.
         """
         t = _ThreadForBlockingPublisher(publisher, interval, self)
@@ -961,11 +962,9 @@ class Scheduler:
         publisher = SensorPub(sensor, make_event_fn=make_event_fn)
         prev = publisher
         for s in subscriber_sequence:
-            if callable(s):
-                prev = s(prev)
-            else:
-                publisher.subscribe(s)
-                prev = s
+            assert prev,\
+                "attempted to compose a terminal subscriber/thunk in a non-final position"
+            prev = _subscribe_thunk(prev, s)
         return self.schedule_periodic_on_separate_thread(publisher, interval)
     
     def schedule_later_one_time(self, publisher, interval):
@@ -1015,7 +1014,7 @@ class Scheduler:
         for (task, handle) in self.active_schedules.items():
             print("Stopping %s" % task)
             # The handles are either event scheduler handles (with a cancel
-            # method) or just thunks to be called directly.
+            # method) or just callables to be called directly.
             if hasattr(handle, 'cancel'):
                 handle.cancel()
             else:

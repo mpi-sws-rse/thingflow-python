@@ -45,14 +45,104 @@ function with the same name is added to the module containing the definition
 ``antevents.linq.select`` has ``map`` and ``select`` functions). These functions
 take all the parameters of the associated method call (except for the implied
 ``self`` parameter of a bound method) and return what we call a *thunk*.
-A thunk returns a fuction, which when passed a publisher, subscribes to the 
+In this case, a thunk is a function that accepts exactly one parameter, a
+publisher. The thunk subscribes one or more fitlers to the publisher and, if
+further downstream subscribers are permitted, returns the last filter in the
+chain. When composing filters, thunks can be used as follows:
 
-
-1. As the parameter to a publisher's ``subscribe()`` method.
-2. The ``Schedule`` class has ``schedule_sensor()`` and
+1. The ``Schedule`` class has ``schedule_sensor()`` and
    ``schedule_sensor_on_separate_thread()`` methods. These take a
    sensor, wrap it in a ``SensorPub`` instance, and then subscribe a sequence
    of filters to the publisher. Each filter can be passed in directly or
-   passed indirectly via one of the functional API calls.
-3. The module ``antevents.linq.combinators`` defines several functions that
-   can be used to combine publishers and functila
+   passed indirectly via thunks.
+2. The module ``antevents.linq.combinators`` defines several functions that
+   can be used to combine filters and thunks. These include ``compose``
+   (sequential composition), ``parallel`` (parallel composition), and
+   ``passthrough`` (parallel composition of a single spur off the main chain).
+
+Example
+-------
+Now, let us look at the lux sensor example, using the functional API [1]_::
+
+    scheduler = Scheduler(asyncio.get_event_loop())
+    scheduler.schedule_sensor(LuxSensor(), interval,
+                              passthrough(output()),
+                              passthrough(csv_writer('/tmp/lux.csv')),
+                              map(lambda event:event.val > THRESHOLD),
+			      passthrouh(lambda v: print('ON' if v else 'OFF')),
+                              GpioPinOut())
+    scheduler.run_forever()
+    
+Notice that we do not need to instantiate any intermediate variables. Everything
+happens in the ``schedule_sensor()`` call. The first argument to this call is
+the sensor (without being wrapped in ``SensorPub``) and the second argument
+is the sample interval. The rest of the arguments are a sequence of filters
+and thunks to be called. Using a bit of ASCII art, the graph created looks as
+follows::
+
+            output
+           /
+  LuxSensor - csv_writer
+          \
+           map - lambda v: print(...)
+	     \
+	      GpioPinOut
+
+The lux sensor has three subscribers: ``output``, ``csv_writer``, and ``map``.
+We get this fanout by using the ``passthrough`` combinator, which creates a
+spur off the main chain. A ``passthrough`` is then used with the output of
+the ``map``, with the main chain finally ending at ``GpioPinOut``.
+
+.. [1] A full, self-contained version of this example may be found at
+       ``examples/functional_api_example.py``.
+
+Combining the Fluent and Functional APIs
+----------------------------------------
+You can use the functional API within a fluent API method chain. For example,
+let us include a sequence of filters in a ``passthrough()``::
+
+    pub = SensorPub(LuxSensor())
+    pub.passthrough(compose(map(lambda event:event.val>THRESHOLD),
+                            output())).csv_writer('/tmp/lux.csv')
+
+Here, we used ``compose`` to build a sequence of ``map`` followed by ``output``.
+Note that the final ``csv_writer`` call is run against the original events
+published by the sensor, not on the mapped events. Here is the resuting
+graph::
+
+            map - output
+           /
+  LuxSensor - csvwriter
+
+Internals
+---------
+The linq-style functions of the fluent API are defined to be
+a kind of extension method -- their first parameter, usually named ``this``, is
+the publisher on which the method will eventually be attached (to borrow
+Smalltalk terminology, the "receiver"). The function
+takes zero or more additional parameters and returns a ``Filter`` object to be
+used for further chaining.
+
+The decorator ``antevents.base.filtermethod`` adds a linq-function as a method
+on a base class (usually ``Publisher``), effectively binding the ``this``
+parameter and, thus, the receiver. To support the functional API, the
+``filtermethod`` decorator also wraps the linq-function in a
+``_ThunkBuilder`` object. This object, when called with
+the parameters intended for our linq-function, returns a *thunk* -- a function
+that has all parameters bound except the ``this`` receiver. When a thunk is
+called (passing a publisher as a parameter), it calls the original linq-function
+with the publisher as the ``this`` receiver and the rest of the parameters
+coming from the original ``_ThunkBuilder`` call.
+
+The functional API also needs some special handling in cases where we may make
+``subscribe`` calls under the covers (e.g. the ``Scheduler.schedule_sensor()``
+method or the various combinators in ``antevents.linq.combinators``). Depending
+on whether the subscriber being passed in is a filter, a thunk, a thunk-builder,
+or a plain function, we need to handle it differently. For example, if we are
+given a filter ``f``, we can subscribe it to our receiver ``this`` via
+``this.subscribe(f)``. However, if we are given a thunk ``t``, we achieve the
+same thing via ``t(this)``. All of this logic is cenralized in
+``antevents.base._subscribe_thunk``.
+
+
+

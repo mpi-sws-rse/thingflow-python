@@ -13,7 +13,9 @@ the @filtermethod decorator, then calling the function directly (not as
 a method of a Publisher) returns a thunk.
 """
 
-from antevents.base import Publisher, filtermethod, _check_thunk, _make_thunk
+from antevents.base import Publisher, filtermethod, _make_thunk, \
+                           _subscribe_thunk
+
 
 def compose(*thunks):
     """Given a list of thunks and/or filters, compose them
@@ -22,12 +24,9 @@ def compose(*thunks):
     def apply(this):
         p = this
         for thunk in thunks:
-            if callable(thunk):
-                _check_thunk(thunk)
-                p = thunk(p)
-            else:
-                p.subscribe(thunk)
-                p = thunk
+            assert p, \
+                "attempted to compose a terminal subscriber/thunk in non-final position"
+            p = _subscribe_thunk(p, thunk)
         return p
     _make_thunk(apply)
     return apply
@@ -35,15 +34,13 @@ def compose(*thunks):
 
 def parallel(*subscribers):
     """Take one or more subscribers/thunks and create a thunk that will
-    subscribe all of them to "this" when evaluated.
+    subscribe all of them to "this" when evaluated. Note that the entire
+    set of subscribers acts as spurs - the original publisher is returned
+    as the next publisher in the chain.
     """
     def apply(this):
         for s in subscribers:
-            if callable(s):
-                _check_thunk(s)
-                s(this)
-            else:
-                this.subscribe(s)
+            _subscribe_thunk(this, s)
         return this
     _make_thunk(apply)
     return apply
@@ -57,14 +54,10 @@ def passthrough(this, spur):
     "fork" in the chain of filters, with two parallel downstream chains.
     
     passthrough takes "this", the previous publisher in the chain, and "spur",
-    either a subscriber or a thunk (a function that takes the publisher as its
-    single argument). The spur is subscribed to the publisher and then the
-    publisher is returned to continue the chain.
+    either a subscriber, a thunk (a function that takes the publisher as its
+    single argument), or a plain anonymous function. The spur is subscribed to
+    the publisher and then the publisher is returned to continue the chain.
     """
-    if callable(spur):
-        _check_thunk(spur)
-        spur(this)
-    else:
-        this.subscribe(spur)
+    _subscribe_thunk(this, spur)
     return this
 
