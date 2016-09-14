@@ -5,7 +5,8 @@ import asyncio
 import unittest
 
 from antevents.base import *
-from utils import make_test_publisher
+from utils import make_test_publisher, make_test_publisher_from_vallist,\
+                  ValidationSubscriber
 import antevents.linq.where
 import antevents.linq.output
 import antevents.linq 
@@ -52,6 +53,18 @@ class TestLinq(unittest.TestCase):
         scheduler.run_forever()
         print("That's all folks")
 
+    def test_first(self):
+        """Test the first() operator
+        """
+        p = make_test_publisher_from_vallist(1, [1, 2, 3, 4, 5, 6])
+        vs = ValidationSubscriber([1], self)
+        p.first().subscribe(vs)
+        scheduler = Scheduler(asyncio.get_event_loop())
+        scheduler.schedule_recurring(p)
+        scheduler.run_forever()
+        self.assertTrue(vs.completed)
+        
+        
 if __name__ == '__main__':
     unittest.main()
 

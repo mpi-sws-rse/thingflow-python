@@ -210,7 +210,7 @@ AntEvents provides a *namedtuple* called ``antevents.base.SensorEvent``, to
 serve as elements of our data stream. The first member of the tuple, called
 ``sensor_id`` is the sensor id property of the sensor from which the event
 originated. The second member of the event tuple, ``ts``, is a timestamp
-of when the event was generated. The third member, ``val`` is the value
+of when the event was generated. The third member, ``val``, is the value
 returned by the sensor's ``sample()`` method.
 
 The ``SensorPub`` wrapper class creates ``SensorEvent`` instances by default.
