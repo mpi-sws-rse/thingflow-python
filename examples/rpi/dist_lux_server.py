@@ -45,7 +45,7 @@ def main(host):
 
 if __name__ == '__main__':
     if len(sys.argv)!=2:
-        print("%s BROKER_HOST" % sys.argv[0])
+        print("%s BROKER" % sys.argv[0])
         sys.exit(1)
     host=sys.argv[1]
     main(host)

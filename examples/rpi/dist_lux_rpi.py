@@ -3,6 +3,7 @@ This file contains the data capture part that runs on the Raspberry Pi.
 """
 import sys
 import asyncio
+import argparse
 
 from antevents.base import Scheduler, SensorPub
 from antevents.sensors.rpi.lux_sensor import LuxSensor
@@ -11,32 +12,33 @@ from antevents.adapters.mqtt import MQTTWriter
 import antevents.linq.select
 import antevents.linq.json
 
-BROKER_HOST='localhost'
-            
 
-def setup(threshold=25):
+def setup(broker, threshold):
     lux = SensorPub(LuxSensor())
     lux.subscribe(print)
     led = GpioPinOut()
     actions = lux.map(lambda event: event.val > threshold)
     actions.subscribe(led)
     actions.subscribe(lambda v: print('ON' if v else 'OFF'))
-    lux.to_json().subscribe(MQTTWriter(BROKER_HOST, topics=[('bogus/bogus', 0)]))
+    lux.to_json().subscribe(MQTTWriter(broker, topics=[('bogus/bogus', 0)]))
     lux.print_downstream()
     return (lux, led)
     
 
 def main(argv=sys.argv[1:]):
-    if len(argv)!=2:
-        print("%s threshold interval" % sys.argv[0])
-        return 1
-    threshold = float(argv[0])
-    interval = float(argv[1])
-    print("%f seconds interval and an led threshold of %f lux" %
-          (interval, threshold))
-    (lux, led) = setup(threshold)
+    parser=argparse.ArgumentParser(description='Distributed lux example, data capture process')
+    parser.add_argument('-i', '--interval', type=float, default=5.0,
+                        help="Sample interval in seconds")
+    parser.add_argument('-t', '--threshold', type=float, default=25.0,
+                        help="Threshold lux level above which light should be turned on")
+    parser.add_argument('broker', metavar="BROKER",
+                        type=str,
+                        help="hostname or ip address of mqtt broker")
+    parsed_args = parser.parse_args(argv)
+    (lux, led) = setup(parsed_args.broker, parsed_args.threshold)
     scheduler = Scheduler(asyncio.get_event_loop())
-    stop = scheduler.schedule_periodic_on_separate_thread(lux, interval)
+    stop = scheduler.schedule_periodic_on_separate_thread(lux,
+                                                          parsed_args.interval)
     print("starting run...")
     try:
         scheduler.run_forever()
