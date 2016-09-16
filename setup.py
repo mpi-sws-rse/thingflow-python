@@ -26,8 +26,8 @@ creation of robust IoT systems from reusable components. These systems must
 account for noisy/missing sensor data, distributed computation, and the
 need for local (near the data source) processing.
 
-AntEvents is pure Python. The packaged distribution (e.g. on PyPi) only
-includes the core Python code. The source repository at
+AntEvents is pure Python (3.4 or later). The packaged distribution
+(e.g. on PyPi) only includes the core Python code. The source repository at
 https://github.com/mpi-sws-rse/antevents-python contains the core Python
 code plus the documentation, examples, and tests. There is also a port
 of AntEvents for micropython available in the source repo.
@@ -39,6 +39,8 @@ setup(name='antevents',
       long_description=DESCRIPTION,
       license="Apache 2.0",
       author="MPI-SWS and Data-Ken Research",
+      maintainer='Jeff Fischer',
+      maintainer_email='jeff+antevents@data-ken.org',
       url='https://github.com/mpi-sws-rse/antevents-python',
       packages=['antevents', 'antevents.internal', 'antevents.linq',
                 'antevents.sensors', 'antevents.sensors.rpi',
@@ -48,6 +50,8 @@ setup(name='antevents',
           'License :: OSI Approved :: Apache Software License',
           'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
-          'Intended Audience :: Developers',
+          'Operating System :: OS Independent',
+          'Intended Audience :: Developers' ,
       ],
+      keywords = ['events', 'iot', 'sensors'],
 )
