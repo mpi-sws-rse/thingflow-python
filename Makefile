@@ -12,6 +12,7 @@ tests:
 clean:
 	rm -f MANIFEST
 	rm -rf dist/
+	rm -rf antevents.egg-info
 	find . -name '*~' -delete
 
 .PHONY: help sdist tests clean

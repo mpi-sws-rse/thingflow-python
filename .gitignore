@@ -2,3 +2,4 @@
 MANIFEST
 dist/
 __pycache__
+antevents.egg-info/
