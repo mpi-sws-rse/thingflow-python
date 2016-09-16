@@ -3,16 +3,17 @@
 help:
 	@echo "make targets are: sdist tests clean help"
 
-sdist:
+dist:
 	python3 setup.py sdist
+	python3 setup.py bdist_wheel
 
 tests:
 	cd tests; ./runtests.sh
 
 clean:
 	rm -f MANIFEST
-	rm -rf dist/
-	rm -rf antevents.egg-info
+	rm -rf dist/ build/
+	rm -rf antevents.egg-info/
 	find . -name '*~' -delete
 
-.PHONY: help sdist tests clean
+.PHONY: help dist tests clean

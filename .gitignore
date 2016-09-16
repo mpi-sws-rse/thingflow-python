@@ -1,5 +1,6 @@
 *~
 MANIFEST
 dist/
+build/
 __pycache__
 antevents.egg-info/
