@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Setup script for antevents distribution. Note that we only
 package up the python code. The tests, docs, and examples
 are all kept only in the full source repository.

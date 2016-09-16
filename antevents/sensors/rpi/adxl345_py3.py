@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Sensor for the ADXL345 accelerometer.
 Code originally from https://github.com/pimoroni/adxl345-python,
 with edits for AntEvents"""

@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Tests of the linq apis. Pretty much still manually verified, although running
 it as a part of the automated test suite makes a decent regression test.
 """

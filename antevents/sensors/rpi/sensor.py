@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Sensors for AntEvents
 	Updated to suit the API changes Jeff mentioned, so that the following can be used as follows:
 		sensor = SensorPub(RPISensor())

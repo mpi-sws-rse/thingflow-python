@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Run an observable that has its own event loop.
 We use the MQTT reader with the mock client to test this
 (does not require an mqtt broker).

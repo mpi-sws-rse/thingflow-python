@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """
 *Adapters* are components that connect antevents to the external
 world. *Readers* are event publishers which source an event stream

@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Test of IterableAsPublisher. This was originally test_base.py, but we then
 added the sensor infrastructure and rewrote the test. This test verfies the
 specific IterableAsPublisher code.

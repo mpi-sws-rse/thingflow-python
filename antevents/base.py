@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """
 Base functionality for ant events. All the core abstractions
 are defined here. Everything else is just subclassing or using

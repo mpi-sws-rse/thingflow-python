@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Implementation of the solar water heater example (with dummy sensors).
 
 In this scenario, we have a solar water heater that includes a water temperature

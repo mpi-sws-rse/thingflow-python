@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Raspberry Pi GPIO Sensor for AntEvents.
 Allows digital (1/0 output) sensors to be connected straight to the
 Raspberry Pi (ADC needed for the Pi to take analogue output).

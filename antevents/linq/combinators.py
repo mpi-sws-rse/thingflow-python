@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """
 This module defines combinators for linq-style functions:
 compose, parallel, and passthrough. A linq-style function takes the previous

@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """
 This is a sensor for the tsl2591 lux (light level) sensor breakout board
 from Adafruit. It is a thin layer on top of python-tsl2591.

@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Sensors for AntEvents
 Uses the nanpy library (https://github.com/nanpy/nanpy), which controls
 a slave Arduino processor. The sensors are connected to the Arduino.

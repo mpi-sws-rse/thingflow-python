@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """
 This isn't actually a unit test - it is for validating fast sampling on the
 actual ESP8266. It samples a dummy sensor at 10Hz and pushes to an

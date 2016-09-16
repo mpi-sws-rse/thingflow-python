@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Cancel an active schedule. Since this is the last active schedule, it
 should cleanly stop the scheduler.
 """

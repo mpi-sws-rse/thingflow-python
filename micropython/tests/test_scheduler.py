@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """These tests are designed to be run on a desktop. You can use
 them to validate the system before deploying to 8266. They use stub
 sensors.

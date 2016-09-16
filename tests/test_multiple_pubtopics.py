@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """
 Build a filter that takes an input stream and dispatches to one of several
 output topics based on the input value.

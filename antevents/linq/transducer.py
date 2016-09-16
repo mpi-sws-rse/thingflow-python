@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Transducers for streams.
 A transducer maintains internal state which is updated every time 
 on_next is called. It implements a function

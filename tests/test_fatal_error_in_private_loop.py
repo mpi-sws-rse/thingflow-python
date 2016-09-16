@@ -1,3 +1,5 @@
+# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Licensed under the Apache 2.0 License.
 """Run a private event loop and then throw a fatal error in it to verify that
 we shut down cleanly and don't lose the error.
 """
