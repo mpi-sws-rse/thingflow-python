@@ -15,5 +15,5 @@ class Output:
     def on_error(self, e):
         pass
 
-sched.schedule_sensor(tsl, 2.0, Output()
+sched.schedule_sensor(tsl, 2.0, Output())
 sched.run_forever()
