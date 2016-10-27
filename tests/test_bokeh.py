@@ -1,3 +1,6 @@
+# Make sure bokeh server is running 
+# 	bokeh serve
+
 import asyncio
 from utils import ValueListSensor, ValidationSubscriber
 from antevents.base import Scheduler, SensorPub, SensorEvent

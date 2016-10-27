@@ -56,16 +56,6 @@ def bokeh_timeseries_mapper(events):
 def bokeh_default_mapper(csv):
     return csv
 
-def bokeh_output(csv, mapper=bokeh_timeseries_mapper):
-    data = mapper(csv)
-    print(data)
-    p = figure(width=800, height=250)
-    p.circle(data['timestamp'],  data['value'])
-    p.line(data['timestamp'], data['value'])
-    show(p)
-    # tsline = TimeSeries(data, x = 'timestamp', y=[ 'value' ], legend=True,\
-    #                     title="Sensor", tools=TOOLS, ylabel='Sensor readings', xlabel='Time') 
-    # show(tsline)
 
 
 class BokehPlotWorker(threading.Thread):
@@ -124,7 +114,7 @@ class BokehPlot(object):
         self.update_period = update_period_in_ms
         self.source = ColumnDataSource(dict({ self.x_axis_label: [], self.y_axis_label: []} ))
 
-class BokehPlotManager(object):
+class BokehPlotManager(Filter):
     def __init__(self):
         self.plotters = { }
         self.open_for_registration = True
@@ -156,6 +146,10 @@ class BokehPlotManager(object):
 
     def on_error(self):
         pass
+
+
+# The following is deprecated. Use BokehPlotManager
+
 
 class BokehOutputWorker(threading.Thread):
     source = ColumnDataSource(dict(timestamp=[], value=[]))
