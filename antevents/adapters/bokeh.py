@@ -1,4 +1,17 @@
 """Adapters for connecting time-series data to Bokeh visualizations
+
+To use Bokeh visualizations, do the following
+1. Create an instance of BokehPlotManager
+2. Register all plots with the BokehPlotManager using BokehPlot objects.
+BokehPlot objects provide the basic formatting of the plots.
+3. Call BokehPlotManager's start() routine to start the visualization
+4. Make BokehPlotManager subscribe to the event streams.
+
+TODO: Step 2 and step 4 should be combined into one
+
+TODO: Currently, we do not support BokehPlot's with multiple plots
+
+TODO: formatting, etc
 """
 
 """Define an event type for time-series data from sensors.
