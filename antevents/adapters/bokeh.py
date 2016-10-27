@@ -11,6 +11,8 @@ SensorEvent = namedtuple('SensorEvent', ['sensor_id', 'ts', 'val'])
 """
 import datetime
 import logging
+import functools
+from math import pi
 
 import threading, queue
 
@@ -19,8 +21,9 @@ from bokeh.plotting import figure, curdoc
 from bokeh.layouts import column # to show two or more plots arranged in a column
 import numpy as np
 from bokeh.models import ColumnDataSource
+from bokeh.models import DatetimeTickFormatter
+
 from bokeh.client import push_session
-from bokeh.driving import linear
 
 from antevents.base import Filter, filtermethod
 
@@ -70,35 +73,42 @@ class BokehPlotWorker(threading.Thread):
         threading.Thread.__init__(self)
         self.plotters = plotters
 
-    def update(self, whichq, whichsource):
+    def update(self, name): 
         print("In update")
+        whichqueue = self.plotters[name]['queue']
+        whichsource = self.plotters[name]['plot_specs'].source
         try:
-            data = whichq.get_nowait()
+            data = whichqueue.get_nowait()
             if data:
-                print('data = ', data)
-                ts = data.ts
+                # ts = datetime.datetime.fromtimestamp(data.ts)
+                ts = (data.ts)
                 val = data.val
+                print('data = ', data)
                 new_data = dict(timestamp=[ts], value=[val]) 
-                whichsource.stream(new_data, 300)
+                print('newdata = ', new_data)
+                whichsource.stream(new_data) 
         except queue.Empty:
             pass
 
     def make_fig(self, plot_source):
         plot_specs = plot_source['plot_specs']
-        p = figure(plot_height=500, tools=TOOLS, y_axis_location='left', title=plot_specs.name)
-        p.x_range.follow = "end"
+        p = figure(plot_height=400, tools=TOOLS, y_axis_location='left', title=plot_specs.name)
         p.xaxis.axis_label = plot_specs.x_axis_label 
         p.yaxis.axis_label = plot_specs.y_axis_label 
-        self.p.x_range.follow_interval = 100
-        self.p.x_range.range_padding = 0 
-        self.p.line(x=plot_specs.x_axis_label, y=plot_specs.y_axis_label, color="blue", source=plot_specs.source)
-        self.p.circle(x=plot_specs.x_axis_label, y=plot_specs.y_axis_label, color="red", source=plot_specs.source)
-        curdoc().add_periodic_callback(functools.partial(self.update, whichqueue=plot_source['queue'], whichsource=plot_specs.source), plot_specs.update_period) #period in ms
+
+        p.x_range.follow = "end"
+        p.x_range.follow_interval = 10
+        p.x_range.range_padding = 0 
+        # p.xaxis.formatter=DatetimeTickFormatter(dict(seconds=["%S"],minutes=["%M"],hours=["%d %B %Y"],days=["%d %B %Y"],months=["%d %B %Y"],years=["%d %B %Y"]))
+        p.xaxis.major_label_orientation = pi/4
+        p.line(x=plot_specs.x_axis_label, y=plot_specs.y_axis_label, color="blue", source=plot_specs.source)
+        p.circle(x=plot_specs.x_axis_label, y=plot_specs.y_axis_label, color="red", source=plot_specs.source)
+        curdoc().add_periodic_callback(functools.partial(self.update, name=plot_specs.name), plot_specs.update_period) #period in ms
+        return p
 
     def run(self):
         print("In thread.run")
-        self.figs = map(self.make_fig, list(self.plotters))
-        
+        self.figs = [self.make_fig(self.plotters[name]) for name in self.plotters]
         self.session = push_session(curdoc())
         self.session.show(column(self.figs)) 
         curdoc().title = 'AntEvent Streams' 
@@ -107,28 +117,28 @@ class BokehPlotWorker(threading.Thread):
 
 
 class BokehPlot(object):
-    def __init__(self, name, y_axis_label="", x_axis_label="Time", update_period_in_ms=500):
+    def __init__(self, name, y_axis_label="", x_axis_label="timestamp", update_period_in_ms=500):
         self.name = name
         self.x_axis_label = x_axis_label
         self.y_axis_label = y_axis_label
         self.update_period = update_period_in_ms
-        self.source = ColumnDataSource(dict(x_axis_label=[], y_axis_label=[]))
+        self.source = ColumnDataSource(dict({ self.x_axis_label: [], self.y_axis_label: []} ))
 
 class BokehPlotManager(object):
     def __init__(self):
-        self.plots = { }
+        self.plotters = { }
         self.open_for_registration = True
         self.started = False
 
     def register(self, plot):
         if self.open_for_registration: 
-            self.plots[plot.name] = { 'queue' : queue.Queue(), 'plot_specs' : plot }
+            self.plotters[plot.name] = { 'queue' : queue.Queue(), 'plot_specs' : plot }
         else:
             raise Exception("Bokeh Adapter: Plot manager does not dynamically add registrations.")
 
     def start(self):
         self.open_for_registration = False
-        self.bokeh_plot_worker = BokehPlotWorker(self.plots)
+        self.bokeh_plot_worker = BokehPlotWorker(self.plotters)
         self.bokeh_plot_worker.start()
         self.started = True
 
@@ -136,13 +146,13 @@ class BokehPlotManager(object):
     def on_next(self, t): 
         whichplot, data = t
         assert self.started, "BokehPlotManager: Data sent without initialization"
-        if whichplot in self.plots:
-            self.plots[whichplot]['queue'].put(data)
+        if whichplot in self.plotters:
+            self.plotters[whichplot]['queue'].put(data)
         else:
             raise Exception("Plot %s not found among registered plots", whichplot)
 
     def on_completed(self):
-        pass
+        exit(1)
 
     def on_error(self):
         pass

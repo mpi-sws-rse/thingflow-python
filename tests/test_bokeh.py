@@ -23,8 +23,13 @@ def debug():
     bokeh_output(csv)
     bokeh_output_streaming(csv)
 
-value_stream = [10, 13, 20, 20, 19, 19, 20, 21, 28, 28, 23, 21, 21, 18, 19, 16, 21]
-value_stream2 = [2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2]
+value_stream = [10, 13, 20, 20, 19, 19, 20, 21, 28, 28, 23, 21, 21, 18, 19, 16, 21,
+                10, 13, 20, 20, 19, 19, 20, 21, 28, 28, 23, 21, 21, 18, 19, 16, 21]
+value_stream2 = [2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 
+                 6, 2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 6,
+                 6, 2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 6,
+                 6, 2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 6,
+                 6, 2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 6]
 
 def test_bokeh_output():
     loop = asyncio.get_event_loop()
@@ -48,8 +53,8 @@ def test_bokeh_manager():
     p2 = SensorPub(s2)
 
     bm = BokehPlotManager()
-    bplot1 = BokehPlot('Sensor1', y_axis_label='s1')  
-    bplot2 = BokehPlot('Sensor2', y_axis_label='s1')  
+    bplot1 = BokehPlot('Sensor1', y_axis_label='value')  
+    bplot2 = BokehPlot('Sensor2', y_axis_label='value')  
     bm.register(bplot1)
     bm.register(bplot2)
     p1.map(lambda v: ('Sensor1', v)  ).subscribe(bm)
@@ -57,7 +62,7 @@ def test_bokeh_manager():
     bm.start()
  
     scheduler = Scheduler(loop)
-    scheduler.schedule_periodic(p1, 0.5) # sample twice every second
+    scheduler.schedule_periodic(p1, 1.0) # sample every second
     scheduler.schedule_periodic(p2, 0.5) # sample twice every second
     scheduler.run_forever()
     # self.assertTrue(vo.completed,
