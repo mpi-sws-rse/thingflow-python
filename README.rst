@@ -117,6 +117,8 @@ Next Steps
 To learn more about AntEvents, look at the ``docs/`` subdirectory. In
 particular, ``tutorial.rst`` is a good starting point.
 
+There is a separate repository with larger AntEvents examples. It is at
+https://github.com/mpi-sws-rse/antevents-examples.
 
 Related Work
 ============
