@@ -6,7 +6,7 @@ from utils import ValueListSensor, ValidationSubscriber
 from antevents.base import Scheduler, SensorPub, SensorEvent
 
 from antevents.linq.map import map
-from antevents.adapters.bokeh import bokeh_output, bokeh_output_streaming, BokehStreamer, BokehPlot, BokehPlotManager
+from antevents.adapters.bokeh import bokeh_output_streaming, BokehStreamer, BokehPlot, BokehPlotManager
 import datetime, time
 
 def mk_csv():
