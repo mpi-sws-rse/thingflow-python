@@ -1,5 +1,5 @@
 import json
-
+import datetime
 from influxdb import InfluxDBClient, SeriesHelper
 
 from collections import namedtuple
@@ -29,7 +29,7 @@ from antevents.base import Publisher, DefaultSubscriber
 class InfluxDBWriter(DefaultSubscriber):
     """Subscribes to events and writes out to an InfluxDB database"""
 
-    def __init__(self, msg_format, host="127.0.0.1", port=8086, database="antevents", 
+    def __init__(self, msg_format, generate_timestamp=True, host="127.0.0.1", port=8086, database="antevents", 
                  username="root", password="root", 
                  ssl=False, verify_ssl=False, timeout=None, 
                  use_udp=False, udp_port=4444, proxies=None,
@@ -40,6 +40,8 @@ class InfluxDBWriter(DefaultSubscriber):
         if not self._validate_msg_format(msg_format):
             raise Exception("Message format should contain series_name (string), fields (string list), and tags (string list)")
 
+        self.generate_timestamp = generate_timestamp 
+        self.epoch = datetime.datetime.utcfromtimestamp(0)
 
         self.client = InfluxDBClient(host=host, port=port, 
                                      username=username, password=password, 
@@ -83,14 +85,24 @@ class InfluxDBWriter(DefaultSubscriber):
     def on_next(self, msg):
         # write the message on to the database (use the bulk uploader to group writes)
         # assume msg is a dictionary-like object with all fields from msg_format
-        print(msg)
         flds = { }
         for f in self.msg_format.fields:
             flds[f] = getattr(msg, f)
         tags = { }
         for t in self.msg_format.tags:
             tags[t] = getattr(msg, t)
-        json_msg = [ { 'measurement' : self.msg_format.series_name, 'fields' : flds, 'tags' : tags } ]
+        if not (self.generate_timestamp) and hasattr(msg, 'ts'):
+            time = int(getattr(msg, 'ts') * 1e9)
+            json_msg = [ { 'measurement' : self.msg_format.series_name, 
+                       'time' : time, 
+                       'fields' : flds, 
+                       'tags' : tags 
+                       } ]
+        else:
+            json_msg = [ { 'measurement' : self.msg_format.series_name, 
+                       'fields' : flds, 
+                       'tags' : tags 
+                       } ]
         print(json_msg)    
         self.client.write_points(json_msg)
         # self.BulkUploader(msg)
@@ -110,11 +122,12 @@ class InfluxDBWriter(DefaultSubscriber):
         return 'InfluxDB Client(msg=%s)' % self.msg_format.__str__()
 
 class InfluxDBReader(Publisher):
-    def __init__(self, query, host="127.0.0.1", port=8086, database="antevent", 
+    def __init__(self, query, host="127.0.0.1", port=8086, database="antevents", 
                  username="root", password="root", 
                  ssl=False, verify_ssl=False, timeout=None, 
                  use_udp=False, udp_port=4444, proxies=None,
                  bulk_size=10):
+        super().__init__()
         self.dbname = database
         self.client = InfluxDBClient(host=host, port=port, 
                                      username=username, password=password, 

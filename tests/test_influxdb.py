@@ -4,10 +4,10 @@ import asyncio
 import datetime, time
 from collections import namedtuple
 
-from utils import ValueListSensor, ValidationSubscriber
-from antevents.base import Scheduler, SensorPub, SensorEvent
+from utils import ValueListSensor
+from antevents.base import Scheduler, SensorPub, SensorEvent, CallableAsSubscriber
 
-from antevents.adapters.influxdb import InfluxDBWriter
+from antevents.adapters.influxdb import InfluxDBWriter, InfluxDBReader
 from influxdb import InfluxDBClient 
 
 
@@ -25,11 +25,11 @@ def test_influx_output():
     loop = asyncio.get_event_loop()
     s = ValueListSensor(1, value_stream)
     p = SensorPub(s)
-    b = InfluxDBWriter(msg_format=Sensor(series_name='Sensor', fields=['val', 'ts'], tags=['sensor_id']))
+    b = InfluxDBWriter(msg_format=Sensor(series_name='Sensor', fields=['val', 'ts'], tags=['sensor_id']), generate_timestamp=False)
     p.subscribe(b)
  
     scheduler = Scheduler(loop)
-    scheduler.schedule_periodic(p, 0.5) # sample twice every second
+    scheduler.schedule_periodic(p, 0.2) # sample five times every second
     scheduler.run_forever()
 
     # Now play back
@@ -37,6 +37,14 @@ def test_influx_output():
     rs = c.query('SELECT * FROM Sensor;').get_points()
     for d in rs: 
         print(d)
+
+    # Play back using a publisher
+    p = InfluxDBReader('SELECT * FROM Sensor;')
+    p.subscribe(CallableAsSubscriber(print))
+
+    scheduler = Scheduler(loop)
+    scheduler.schedule_periodic(p, 0.2) # sample five times every second
+    scheduler.run_forever()
     print("That's all folks")
     
 if __name__ == "__main__":
