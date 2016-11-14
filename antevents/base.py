@@ -807,6 +807,8 @@ class Scheduler:
     def __init__(self, event_loop):
         self.event_loop = event_loop
         self.active_schedules = {} # mapping from task to schedule handle
+        self.pending_futures = {}
+        self.next_future_id = 1
         # Set the following to an exception if we are exiting the loop due to
         # an exception. We will then raise a SchedulerError when the event loop
         # exits.
@@ -1009,6 +1011,24 @@ class Scheduler:
             raise ScheduleError("Scheduler aborted due to fatal error: %s" %
                                 self.fatal_error)
 
+    def _schedule_coroutine(self, coro, done_callback):
+        """This is for low-level components that deal directly with
+        the event loop to to schedule a coroutine. We
+        track them so we can either wait for or cancel them when stop()
+        is called.
+        """
+        fid = self.next_future_id
+        future = self.event_loop.create_task(coro)
+        # the combined callback. To avoid race conditions, always
+        # call the provided done callback before we remove the future.
+        def cb(f):
+            done_callback(f)
+            del self.pending_futures[fid]
+        self.pending_futures[fid] = future
+        future.add_done_callback(cb)
+        self.next_future_id += 1
+        return future
+        
     def stop(self):
         """Stop any active schedules for publishers and then call stop() on
         the event loop.
@@ -1022,5 +1042,25 @@ class Scheduler:
             else:
                 handle()
         self.active_schedules = {}
+        # go through the pending futures. We don't stop the
+        # event loop until all the pending futures have been
+        # completed or stopped by their callers.
+        for (fid, f) in self.pending_futures.items():
+            if f.done() == False:
+                # if we still have pending futures, we try the
+                # stop again after the first one we see has
+                # completed.
+                #print("Waiting for future %d (%s)" % (fid, repr(f)))
+                def recheck_stop(f):
+                    exc = f.exception()
+                    if exc:
+                        raise FatalError("Exception in coroutine %s: %s" %
+                                         (repr(f), exc))
+                    else:
+                        self.stop()
+                f.add_done_callback(recheck_stop)
+                return
+            elif f.exception():
+                raise FatalError("Exception in coroutine %s: %s" %
+                                 (repr(f), f.exception()))
         self.event_loop.stop()
-
