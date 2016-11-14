@@ -8,6 +8,7 @@ f: Input X State -> Output X State
 For those who speak automata, this is a Mealy machine.
 """
 from collections import deque
+from statistics import median
 
 from antevents.base import Publisher, Filter, SensorEvent, filtermethod
 
@@ -19,11 +20,16 @@ class Transducer:
         return v # return the transformed value
 
     def complete(self):
+        """Can optionally return a final value
+        """
         pass
 
 @filtermethod(Publisher)
 def transduce(this, xform):
-    """Execute a transducer to transform the observable sequence.
+    """Execute a (stateful) transducer to transform the event sequence.
+    The transducer provides a step() method to accept a value
+    and return the transformation. If the step() returns None,
+    no output event is emitted
 
     Keyword arguments:
     :param Transducer transducer: A transducer to execute.
@@ -38,10 +44,14 @@ def transduce(this, xform):
         # in it being called twice. TODO: This is somewhat error prone - need to
         # think through tis a bit more.
         x_prime = xform.step(x)
-        self._dispatch_next(x_prime)
+        if x_prime is not None:
+            self._dispatch_next(x_prime)
 
     def on_completed(self):
-        xform.complete()
+        x_prime = xform.complete()
+        # there may be a final event to be sent out upon completion
+        if x_prime is not None:
+            self._dispatch_next(x_prime)
         self._dispatch_completed()
 
     return Filter(this, on_next=on_next, on_completed=on_completed,
@@ -136,3 +146,45 @@ class SensorSlidingMean(SlidingWindowTransducer):
         return 'SensorSlidingMean(%d)' % self.history_samples
 
 
+class PeriodicMedianTransducer(Transducer):
+    """Emit an event once every ``period`` input events.
+    The value is the median of the inputs received since the last
+    emission.
+    """
+    def __init__(self, period=5):
+        self.period = period
+        self.samples = [None for i in range(period)]
+        self.events_since_last = 0
+        self.last_event = None # this is used in emitting the last event
+
+    def _event_to_val(self, evt):
+        """Given an event, return the sample value. The default is for
+        SensorEvent. Override if you have a different event definition.
+        """
+        return evt.val
+    
+    def _make_event(self, last_event, val):
+        """Return an event based off the last event, but with the specified
+        value. This is for SensorEvent. Override if you have a different
+        event definition.
+        """
+        return SensorEvent(sensor_id=last_event.sensor_id,
+                           ts=last_event.ts, val=val)
+    
+    def step(self, v):
+        self.samples[self.events_since_last] = self._event_to_val(v)
+        self.events_since_last += 1
+        if self.events_since_last==self.period:
+            val = median(self.samples)
+            event = self._make_event(v, val)
+            self.events_since_last = 0
+            return event
+        else:
+            self.last_event = v # save in case we complete before completing a period
+            return None
+
+    def complete(self):
+        if self.events_since_last>0:
+            # if we have some partial state, we emit one final event that
+            # averages whatever we saw since the last emission.
+            return self._make_event(self.last_event, median(self.samples[0:self.events_since_last]))
