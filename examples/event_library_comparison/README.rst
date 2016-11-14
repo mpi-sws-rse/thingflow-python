@@ -3,7 +3,7 @@ Comparison with Async/Await
 ===========================
 
 Here, we compare AntEvents to generic event-driven code using the new
-async/await language feature available starting with Python 3.5.
+``async`` / ``await`` language feature available starting with Python 3.5.
 
 Scenario
 --------
@@ -13,15 +13,17 @@ We wish to sample a sensor once every half second and:
 2. Once every 5 samples, send the median of the last five samples to
    an MQTT queue for remote processing.
 
-We have an asynchronous interface to the MQTT protocol, which provides
-coroutines to establish a connection, publish a message, and disconnect.
+We have an asynchronous interface to the MQTT protocol (via hbmqtt),
+which provides coroutines to establish a connection, publish a message, and
+disconnect.
 
 Event Version without Async/Await
 ---------------------------------
 One could write an event-driven solution using the ``asyncio`` library
 without the ``async`` and ``await`` statements. This will involve a large
 number of callbacks and the resulting code will be very difficult to reason
-about.
+about. See `this paper <http://dl.acm.org/citation.cfm?id=1244403>`__ for
+an in-depth discussion of callback vs. coroutine event-driven programs.
 
 Async/Await Implementation
 --------------------------
@@ -99,7 +101,34 @@ second pipeline from the sensor, through the transducer, and to the queue.
 
 Evaluation
 ----------
-In addition to being shorter, the AntEvents version makes the data flow
-much clearer.
+The async/await implementation largely follows a traditional procedural style. [1]_
+Overall, the async/await has two disadvantages relative to AntEvents:
+
+1. The async nature of the coroutines is viral in the sense that any
+   functions/methods calling an async (coroutine) method must also be
+   async. This causes implementation decisions about whether to use
+   asynchronous or synchronous APIs to have a non-local impact. In contrast,
+   AntEvents can support asynchronous APIs as well as components running
+   in separate threads, without any application-level changes.
+2. Each function in the async/await program's call stack must also have control
+   flow to handle three possible situations: a normal event, an error, or the
+   end of events from the upstream sensor. In AntEvents, these are handled
+   by the (reusable) components via the ``on_next``, ``on_error``, and
+   ``on_completed`` methods. AntEvents application code only needs to
+   be concerned with the overall structure of the data flow.
+
+AntEvents achives this simplicity by providing a level of indirection in the
+programming model. The AntEvents code actually generates the appliation by
+connecting and configuring the requested components. The filter abstraction
+used by the appliation programmer is much higher level than the procedural
+abstractions used in an async/await application.
 
 
+.. [1] An exception is the periodic scheduling of the sensor function, which requires
+   the mutually recursive ``loop`` and ``done_callback`` callback functions.
+
+Code
+----
+Full working code for both versions is available in this directory:
+``asyncawait.py`` implements the scenario using coroutines and ``ant.py``
+uses AntEvents.
