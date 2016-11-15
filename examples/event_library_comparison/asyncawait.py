@@ -97,33 +97,34 @@ class MqttWriter:
             await self.client.disconnect()
 
 
-class ProcessSensor:
-    def __init__(self, sensor, url, event_loop):
-        self.sensor = sensor
-        self.xduce = PeriodicMedianTransducer(5)
-        self.q = MqttWriter(url, sensor.sensor_id, event_loop)
-
-    async def sample_and_process(self):
-        try:
-            sample = self.sensor.sample()
-        except StopIteration:
-            print("disconnecting")
-            await self.q.disconnect()
-            return False
-        event = SensorEvent(sensor_id=self.sensor.sensor_id, ts=time.time(), val=sample)
-        csv_writer(event)
-        median_event = self.xduce.step(event)
-        if median_event:
-            await self.q.send((median_event.sensor_id, median_event.ts, median_event.val),)
-        return True
+async def sample_and_process(sensor, mqtt_writer, xducer):
+    try:
+        sample = sensor.sample()
+    except StopIteration:
+        final_event = xducer.complete()
+        if final_event:
+            await mqtt_writer.send((final_event.sensor_id, final_event.ts,
+                                    final_event.val),)
+        print("disconnecting")
+        await mqtt_writer.disconnect()
+        return False
+    event = SensorEvent(sensor_id=sensor.sensor_id, ts=time.time(), val=sample)
+    csv_writer(event)
+    median_event = xducer.step(event)
+    if median_event:
+        await mqtt_writer.send((median_event.sensor_id, median_event.ts,
+                                median_event.val),)
+    return True
         
         
     
 sensor = RandomSensor('sensor-2', stop_after_events=12)
+transducer = PeriodicMedianTransducer(5)
 event_loop = asyncio.get_event_loop()
-process = ProcessSensor(sensor, URL, event_loop)
+writer = MqttWriter(URL, sensor.sensor_id, event_loop)
+
 def loop():
-    coro = process.sample_and_process()
+    coro = sample_and_process(sensor, writer, transducer)
     task = event_loop.create_task(coro)
     def done_callback(f):
         exc = f.exception()

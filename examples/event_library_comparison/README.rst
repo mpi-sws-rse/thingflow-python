@@ -28,39 +28,40 @@ an in-depth discussion of callback vs. coroutine event-driven programs.
 Async/Await Implementation
 --------------------------
 Assuming we already have a transducer class for the queue output
-and a (coroutine-based) adapter to the queue, we can create a class for sampling
-and sending the results downstream::
+and a (coroutine-based) adapter to the queue, we can create a coroutine for
+sampling and sending the results downstream::
 
-    class ProcessSensor:
-        def __init__(self, sensor, url, event_loop):
-            self.sensor = sensor
-            self.xduce = PeriodicMedianTransducer(5)
-            self.q = MqttWriter(url, sensor.sensor_id, event_loop)
-    
-        async def sample_and_process(self):
-            try:
-                sample = self.sensor.sample()
-            except StopIteration:
-                print("disconnecting")
-                await self.q.disconnect()
-                return False
-            event = SensorEvent(sensor_id=self.sensor.sensor_id, ts=time.time(), val=sample)
-            csv_writer(event)
-            median_event = self.xduce.step(event)
-            if median_event:
-                await self.q.send((median_event.sensor_id, median_event.ts, median_event.val),)
-            return True
+    async def sample_and_process(sensor, mqtt_writer, xducer):
+        try:
+            sample = sensor.sample()
+        except StopIteration:
+            final_event = xducer.complete()
+            if final_event:
+                await mqtt_writer.send((final_event.sensor_id, final_event.ts,
+                                        final_event.val),)
+            print("disconnecting")
+            await mqtt_writer.disconnect()
+            return False
+        event = SensorEvent(sensor_id=sensor.sensor_id, ts=time.time(), val=sample)
+        csv_writer(event)
+        median_event = xducer.step(event)
+        if median_event:
+            await mqtt_writer.send((median_event.sensor_id, median_event.ts,
+                                    median_event.val),)
+        return True
 
-The ``sample_and_process`` method must be a coroutine, as it calls coroutines
+The ``sample_and_process`` function must be a coroutine, as it calls coroutines
 defined by the message queue adapter.
 
-We now must establish the main sampling loop::
+We now define global variables establish the main sampling loop::
 
     sensor = RandomSensor('sensor-2', stop_after_events=12)
+    transducer = PeriodicMedianTransducer(5)
     event_loop = asyncio.get_event_loop()
-    process = ProcessSensor(sensor, URL, event_loop)
+    writer = MqttWriter(URL, sensor.sensor_id, event_loop)
+    
     def loop():
-        coro = process.sample_and_process()
+        coro = sample_and_process(sensor, writer, transducer)
         task = event_loop.create_task(coro)
         def done_callback(f):
             exc = f.exception()
@@ -74,7 +75,7 @@ We now must establish the main sampling loop::
         task.add_done_callback(done_callback)
         
     event_loop.call_soon(loop)
-    event_loop.run_forever()
+    event_loop.run_forever()  
 
 The ``loop`` function schedules our coroutine and sets up a completion
 callback (``done_callback``). This callback checks for errors and the
@@ -84,9 +85,11 @@ the loop to run in half a second.
 AntEvents Version
 -----------------
 In the AntEvents version, state is maintained by each individual component, and
-we can rely on the scheduler to deal with calling our task periodically and to
-handle boundry events. Assuming we already have a transducer class and an
-adapter to the queue, the entire code for this scenario is::
+we can rely on the scheduler to deal with calling our task periodically.
+Boundary events (errors and termination) are handled through a combination of
+the scheduler and the individual AntEvent filters. Assuming we already have a
+transducer class and an adapter to the queue, the entire code for this scenario
+is::
 
     scheduler = Scheduler(asyncio.get_event_loop())
     sensor = SensorPub(RandomSensor(SENSOR_ID, mean=10, stddev=5, stop_after_events=12))
@@ -117,10 +120,10 @@ Overall, the async/await has two disadvantages relative to AntEvents:
    ``on_completed`` methods. AntEvents application code only needs to
    be concerned with the overall structure of the data flow.
 
-AntEvents achives this simplicity by providing a level of indirection in the
-programming model. The AntEvents code actually generates the appliation by
+AntEvents achieves this simplicity by providing a level of indirection in the
+programming model. The AntEvents code actually generates the application by
 connecting and configuring the requested components. The filter abstraction
-used by the appliation programmer is much higher level than the procedural
+used by the application programmer is at a much higher level than the procedural
 abstractions used in an async/await application.
 
 
