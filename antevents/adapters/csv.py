@@ -56,9 +56,10 @@ class SensorEventMapping(EventSpreadsheetMapping):
 default_event_mapper = SensorEventMapping()
 
 
-class CsvWriter(DefaultSubscriber):
+class CsvWriter(Publisher, DefaultSubscriber):
     def __init__(self, previous_in_chain, filename,
                  mapper=default_event_mapper):
+        super().__init__()
         self.filename = filename
         self.mapper = mapper
         self.file = open(filename, 'w', newline='')
@@ -70,12 +71,15 @@ class CsvWriter(DefaultSubscriber):
     def on_next(self, x):
         self.writer.writerow(self.mapper.event_to_row(x))
         self.file.flush()
+        self._dispatch_next(x)
 
     def on_completed(self):
         self.file.close()
+        self._dispatch_completed()
 
     def on_error(self, e):
         self.file.close()
+        self._dispatch_error(e)
 
     def __str__(self):
         return 'csv_writer(%s)' % self.filename
@@ -84,7 +88,7 @@ class CsvWriter(DefaultSubscriber):
 def csv_writer(this, filename, mapper=default_event_mapper):
     """Write an event stream to a csv file. mapper is an
     instance of EventSpreadsheetMapping.
-    """    
+    """
     return CsvWriter(this, filename, mapper)
 
 def default_get_date_from_event(event):
@@ -170,7 +174,7 @@ def rolling_csv_writer(this, directory, basename, mapper=default_event_mapper,
     """
     return RollingCsvWriter(this, directory, basename, mapper=mapper,
                             get_date=get_date, sub_topic=sub_topic)
-    
+
 
 class CsvReader(DirectReader):
     def __init__(self, filename, mapper=default_event_mapper,

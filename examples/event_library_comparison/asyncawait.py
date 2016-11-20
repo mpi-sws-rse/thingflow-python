@@ -81,7 +81,7 @@ class MqttWriter:
         self.connected = False
 
     def _to_message(self, msg):
-        return bytes(json.dumps(msg), encoding='utf-8')
+        return bytes(json.dumps((msg.sensor_id, msg.ts, msg.val),), encoding='utf-8')
     
     async def send(self, msg):
         if not self.connected:
@@ -103,8 +103,7 @@ async def sample_and_process(sensor, mqtt_writer, xducer):
     except StopIteration:
         final_event = xducer.complete()
         if final_event:
-            await mqtt_writer.send((final_event.sensor_id, final_event.ts,
-                                    final_event.val),)
+            await mqtt_writer.send(final_event)
         print("disconnecting")
         await mqtt_writer.disconnect()
         return False
@@ -112,8 +111,7 @@ async def sample_and_process(sensor, mqtt_writer, xducer):
     csv_writer(event)
     median_event = xducer.step(event)
     if median_event:
-        await mqtt_writer.send((median_event.sensor_id, median_event.ts,
-                                median_event.val),)
+        await mqtt_writer.send(median_event)
     return True
         
         
