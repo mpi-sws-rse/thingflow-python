@@ -168,6 +168,23 @@ class SensorEventValidationSubscriber(DefaultSubscriber):
                       "Got an unexpected on_error call with parameter: %s" % exc)
 
 
+class ValidateAndStopSubscriber(ValidationSubscriber):
+    """A version of ValidationSubscriber that calls a stop
+    function after the specified events have been received.
+    """
+    def __init__(self, expected_stream, test_case, stop_fn,
+                 extract_value_fn=lambda event:event.val):
+        super().__init__(expected_stream, test_case,
+                         extract_value_fn=extract_value_fn)
+        self.stop_fn = stop_fn
+
+    def on_next(self, x):
+        super().on_next(x)
+        if self.next_idx==len(self.expected_stream):
+            print("ValidateAndStopSubscriber: stopping")
+            self.stop_fn()
+
+
 class CaptureSubscriber(DefaultSubscriber):
     """Capture the sequence of events in a list for later use.
     """

@@ -480,8 +480,8 @@ class DirectPublisherMixin:
     
 
 class EventLoopPublisherMixin:
-    """Publisher that runs on a separate private event loop.
-    This needs to be run in a separate thread.
+    """Publisher that gets messages from an event loop, either the same
+    loop as the scheduler or a separate one.
     """
     def _observe_event_loop(self):
         """Call the event publisher's event loop. When
@@ -912,6 +912,20 @@ class Scheduler:
         self.active_schedules[publisher] = handle
         publisher._schedule(enqueue_fn=None)
         return cancel
+
+    def schedule_on_main_event_loop(self, publisher):
+        """Schedule an publisher that runs on the main event loop.
+        The publisher is assumed to implement EventLoopPublisherMixin.
+        Returns a callable that can be used to unschedule the publisher.
+        """
+        def stop():
+            # tell the publisher to stop. When the publisher has finished
+            # processing any messages, it MUST call
+            # _remove_from_active_schedules() on the scheduler.
+            publisher._stop_loop()
+        self.active_schedules[publisher] = stop
+        self.event_loop.call_soon(publisher._observe_event_loop)
+        return stop
     
     def schedule_on_private_event_loop(self, publisher):
         """Schedule an publisher that has its own event loop on another thread.

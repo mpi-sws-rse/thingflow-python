@@ -20,3 +20,20 @@ software to be installed and configured. To support this, we do the following:
     to check for the dependencies and skip the test if the requirements are
     not met.
 
+Dependencies
+-------------
+Here are the commands used to install all the dependencies on Ubuntu::
+
+  sudo apt-get install postgresql
+  sudo apt-get install libpq-dev python3-dev
+  pip install psycopg2
+  # In the following, replace USER with your linux user name
+  sudo -u postgres psql <<!
+  create user USER;
+  create database iot;
+  grant all on database iot to USER;
+  \q
+  !
+  sudo apt-get install mosquitto
+  pip install paho-mqtt
+  pip install hbmqtt
