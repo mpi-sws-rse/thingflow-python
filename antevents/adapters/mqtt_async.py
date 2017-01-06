@@ -7,6 +7,7 @@ up the connect request instead.
 import hbmqtt.client
 import hbmqtt.session
 import json
+import asyncio
 from collections import deque
 
 from antevents.base import DefaultSubscriber, FatalError, Publisher, \
@@ -52,7 +53,7 @@ class QueueWriter(Publisher, DefaultSubscriber):
         assert future == self.pending_task
         exc = future.exception()
         if exc:
-            raise FatalError("mqtt request failed with exception: " % exc)
+            raise FatalError("mqtt request failed with exception: %s" % exc)
         if self.pending_message:
             self._dispatch_next(self.pending_message)
             self.pending_message = None
@@ -144,10 +145,12 @@ class QueueReader(Publisher, EventLoopPublisherMixin):
     CONNECTING_STATE    = "CONNECTING"
     SUBSCRIBING_STATE   = "SUBSCRIBING"
     ACTIVE_STATE        = "ACTIVE"
+    UNSUBSCRIBING_STATE = "UNSUBSCRIBING"
     DISCONNECTING_STATE = "DISCONNECTING"
     FINAL_STATE         = "FINAL"
     
-    def __init__(self, uri, topic, scheduler, qos=hbmqtt.client.QOS_1):
+    def __init__(self, uri, topic, scheduler, qos=hbmqtt.client.QOS_1,
+                 timeout=DELIVER_TIMEOUT):
         super().__init__()
         self.uri = uri
         self.topic = topic
@@ -157,6 +160,7 @@ class QueueReader(Publisher, EventLoopPublisherMixin):
         self.pending_task = None
         self.stop_requested = False
         self.client = hbmqtt.client.MQTTClient(loop=scheduler.event_loop)
+        self.timeout = timeout # no need to change, overridable just for testing
 
     def _start_task(self, call, next_state):
         #print("_start_task: %s, next_state=%s" % (repr(call), next_state))
@@ -167,8 +171,8 @@ class QueueReader(Publisher, EventLoopPublisherMixin):
     def _process_stop_request(self):
         if self.stop_requested:
             #print("stop requested")
-            self._start_task(self.client.disconnect(),
-                             QueueReader.DISCONNECTING_STATE)
+            self._start_task(self.client.unsubscribe([self.topic,]),
+                             QueueReader.UNSUBSCRIBING_STATE)
             return True
         else:
             return False
@@ -177,21 +181,21 @@ class QueueReader(Publisher, EventLoopPublisherMixin):
         assert future == self.pending_task
         #print("_process_event state=%s" % self.state)
         exc = future.exception()
-        if exc and isintance(exc, asyncio.TimeoutError) and\
+        if exc and isinstance(exc, asyncio.TimeoutError) and\
            self.state==QueueReader.ACTIVE_STATE:
             # we timeout every few seconds to check for stop requests
             if not self._process_stop_request():
-                self._start_task(self.client.deliver_message(DELIVER_TIMEOUT),
+                self._start_task(self.client.deliver_message(self.timeout),
                                  QueueReader.ACTIVE_STATE)
         elif exc:
-            raise FatalError("mqtt request failed with exception: " % exc)
+            raise FatalError("mqtt request failed with exception: %s" % exc)
         elif self.state==QueueReader.CONNECTING_STATE:
             if not self._process_stop_request():
                 self._start_task(self.client.subscribe([(self.topic, self.qos),]),
                                                        QueueReader.SUBSCRIBING_STATE)
         elif self.state==QueueReader.SUBSCRIBING_STATE:
             if not self._process_stop_request():
-                self._start_task(self.client.deliver_message(DELIVER_TIMEOUT),
+                self._start_task(self.client.deliver_message(self.timeout),
                                  QueueReader.ACTIVE_STATE)
         elif self.state==QueueReader.ACTIVE_STATE:
             result = future.result()
@@ -199,8 +203,11 @@ class QueueReader(Publisher, EventLoopPublisherMixin):
             message = str(result.data, encoding='utf-8')
             self._dispatch_next(json.loads(message))
             if not self._process_stop_request():
-                self._start_task(self.client.deliver_message(DELIVER_TIMEOUT),
+                self._start_task(self.client.deliver_message(self.timeout),
                                  QueueReader.ACTIVE_STATE)
+        elif self.state==QueueReader.UNSUBSCRIBING_STATE:
+            self._start_task(self.client.disconnect(),
+                             QueueReader.DISCONNECTING_STATE)
         elif self.state==QueueReader.DISCONNECTING_STATE:
             self._dispatch_completed()
             self.state = QueueReader.FINAL_STATE
