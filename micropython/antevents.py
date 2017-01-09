@@ -107,6 +107,14 @@ class SensorPub(Publisher):
         except Exception as e:
             self._dispatch_error(e)
 
+class Output:
+    def on_next(self, x):
+        print(x)
+    def on_completed():
+        pass
+    def on_error(self, e):
+        print("Error: " + e)
+
 class _Interval:
     __slots__ = ('ticks', 'tasks', 'next_tick')
     def __init__(self, ticks, next_tick):
