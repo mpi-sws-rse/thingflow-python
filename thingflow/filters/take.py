@@ -1,6 +1,6 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-from antevents.base import Publisher, Filter, FatalError, filtermethod
+from thingflow.base import OutputThing, FunctionFilter, FatalError, filtermethod
 
 class ArgumentOutOfRangeException(FatalError):
     pass
@@ -8,7 +8,7 @@ class ArgumentOutOfRangeException(FatalError):
 class SequenceContainsNoElementsError(FatalError):
     pass
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def take_last(this, count):
     """Takes a specified number of contiguous elements from the end of an observable sequence.
     This operator accumulates a buffer with a length enough to store
@@ -30,10 +30,10 @@ def take_last(this, count):
             self._dispatch_next(v)
         self._dispatch_completed()
 
-    return Filter(this, on_next=on_next, on_completed=on_completed)
+    return FunctionFilter(this, on_next=on_next, on_completed=on_completed)
 
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def last(this, default=None):
     value = [default]
     seen_value = [False]
@@ -48,9 +48,9 @@ def last(this, default=None):
         else:
             self._dispatch_next(value[0])
             self._dispatch_completed()
-    return Filter(this, on_next=on_next, on_completed=on_completed)
+    return FunctionFilter(this, on_next=on_next, on_completed=on_completed)
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def take(this, count):
     """Takes a specified number of contiguous elements in an event sequence.
     Keyword arguments:
@@ -64,16 +64,13 @@ def take(this, count):
     remaining = [count]
     completed = [False]
 
-    if not count:
-        return Publisher.empty()
-
     def on_next(self, value):
         if remaining[0] > 0:
             remaining[0] -= 1
             self._dispatch_next(value)
-            if not remaining[0]:
-                completed[0] = True
-                self._dispatch_completed()
+        if not remaining[0] and completed[0]==False:
+            completed[0] = True
+            self._dispatch_completed()
 
     def on_completed(self):
         # We may have already given a completed notification if we hit count
@@ -82,5 +79,6 @@ def take(this, count):
         if completed[0]==False:
             self._dispatch_completed()
 
-    return Filter(this, on_next=on_next, on_completed=on_completed, name="skip")
+    return FunctionFilter(this, on_next=on_next, on_completed=on_completed,
+                          name="skip")
 

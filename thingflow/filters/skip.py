@@ -1,8 +1,8 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-from antevents.base import Publisher, Filter, filtermethod
+from thingflow.base import OutputThing, FunctionFilter, filtermethod
 
-@filtermethod(Publisher, alias="drop")
+@filtermethod(OutputThing, alias="drop")
 def skip(this, count):
     """Bypasses a specified number of elements in an event sequence
     and then returns the remaining elements.
@@ -23,5 +23,5 @@ def skip(this, count):
         else:
             remaining[0] -= 1
 
-    return Filter(this, on_next=on_next, name="skip")
+    return FunctionFilter(this, on_next=on_next, name="skip")
 

@@ -1,13 +1,13 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-"""Timeout-related publishers and filters.
+"""Timeout-related output things and filters.
 """
-from antevents.base import Publisher, DirectPublisherMixin, Filter,\
+from thingflow.base import OutputThing, DirectOutputThingMixin, FunctionFilter,\
                            FatalError, filtermethod
 
-class Timeout(Publisher, DirectPublisherMixin):
-    """A publisher that can shedule timeouts for itself. When a
-    timeout occurs, an event is published on the default topic.
+class Timeout(OutputThing, DirectOutputThingMixin):
+    """An output thing that can shedule timeouts for itself. When a
+    timeout occurs, an event is sent on the default port.
     The timeout_thunk is called to get the actual event.
     """
     def __init__(self, scheduler, timeout_thunk):
@@ -46,7 +46,7 @@ class EventWatcher:
         pass
 
     
-class SupplyEventWhenTimeout(Filter):
+class SupplyEventWhenTimeout(FunctionFilter):
     """This filter sits in a chain and passes incoming events through to
     its output. It also passes all events to the on_next() method of the
     event watcher. If no event arrives on the input after the interval has
@@ -55,56 +55,56 @@ class SupplyEventWhenTimeout(Filter):
     """
     def __init__(self, previous_in_chain, event_watcher, scheduler, interval):
         self.event_watcher = event_watcher
-        self.timeout_publisher = \
+        self.timeout_thing = \
             Timeout(scheduler, self.event_watcher.produce_event_for_timeout)
         self.interval = interval
         def on_next(self, x):
             self.event_watcher.on_next(x)
             # reset the timer
-            self.timeout_publisher.start(self.interval)
+            self.timeout_thing.start(self.interval)
             self._dispatch_next(x)
         def on_completed(self):
             self.event_watcher.close()
-            self.timeout_publisher.clear()
+            self.timeout_thing.clear()
             self._dispatch_completed()
         def on_error(self, e):
             self.event_watcher.close()
-            self.timeout_publisher.clear()
+            self.timeout_thing.clear()
             self._dispatch_error(e)
         super().__init__(previous_in_chain, on_next=on_next,
                          on_completed=on_completed, on_error=on_error,
                          name='supply_event_when_timeout')
-        # pass the timeout_publisher's timeout events to my on_timeout_next()
-        # method
-        self.timeout_publisher.subscribe(self,
-                                         topic_mapping=('default','timeout'))
+        # pass the timeout_thing's timeout events to my on_timeout_next()
+        # method<
+        self.timeout_thing.connect(self,
+                                   port_mapping=('default','timeout'))
         # We start the timeout now - if we don't get a first event from the
         # input within the timeout, we should supply a timeout event. This
         # timeout won't start counting down until we start the scheduler.
-        self.timeout_publisher.start(interval)
+        self.timeout_thing.start(interval)
 
     def on_timeout_next(self, x):
-        """This method is subscribed to the Timeout component's output. If it
+        """This method is connected to the Timeout thing's output. If it
         gets called, the timeout has fired. We need to reschedule the timeout
         as well, so that we continue to produce events in the case of multiple
         consecutive timeouts.
         """
-        self.timeout_publisher.start(self.interval)
+        self.timeout_thing.start(self.interval)
         self._dispatch_next(x)
 
     def on_timeout_error(self, e):
-        """This won't get called, as the Timeout component does not republish any
+        """This won't get called, as the Timeout thing does not republish any
         errors it receives.
         """
         raise FatalError("%s.on_timeout_error should not be called" % self)
 
     def on_timeout_completed(self):
-        """This won't get called, as the timeout component does not propate
+        """This won't get called, as the timeout thing does not propate
         any completions. We just use the primary event stream to figure out when
         things are done and clear any pending timeouts at that time.
         """
         raise FatalError("%s.on_timeout_completed should not be called" % self)
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def supply_event_when_timeout(this, event_watcher, scheduler, interval):
     return SupplyEventWhenTimeout(this, event_watcher, scheduler, interval)

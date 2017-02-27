@@ -42,7 +42,7 @@ setup(name='thingflow',
       maintainer='Jeff Fischer',
       maintainer_email='jeff+thingflow@data-ken.org',
       url='https://github.com/mpi-sws-rse/thingflow-python',
-      packages=['thingflow', 'thingflow.internal', 'thingflow.linq',
+      packages=['thingflow', 'thingflow.internal', 'thingflow.filters',
                 'thingflow.sensors', 'thingflow.sensors.rpi',
                 'thingflow.adapters', 'thingflow.adapters.rpi'],
       classifiers = [

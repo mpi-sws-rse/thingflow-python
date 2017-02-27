@@ -337,7 +337,9 @@ class OutputThing:
 
 class Filter(OutputThing, InputThing):
     """A filter has a default input port and a default output port. It is
-    used for data transformations
+    used for data transformations. The default implementations of on_next(),
+    on_completed(), and on_error() just pass the event on to the downstream
+    connection.
     """
     def __init__(self, previous_in_chain):
         super().__init__()
@@ -345,17 +347,34 @@ class Filter(OutputThing, InputThing):
         self.disconnect_from_upstream = previous_in_chain.connect(self)
 
     def on_next(self, x):
-        """The default implementation of on_next() calls _filter(x) to process
+        self._dispatch_next(x)
+
+    def on_error(self, e):
+        self._dispatch_error(e)
+
+    def on_completed(self):
+        self._dispatch_completed()
+
+    def __str__(self):
+        return self.__class__.__name__
+
+        
+class XformOrDropFilter(Filter):
+    """Implements a slightly more complex filter protocol where events may be
+    transformed or dropped. Subclasses just need to implement the _filter() and
+    _complete() methods.
+    """
+    def __init__(self, previous_in_chain):
+        super.__init__(previous_in_chain)
+
+    def on_next(self, x):
+        """Calls _filter(x) to process
         the event. If _filter() returns None, nothing futher is done. Otherwise,
         the return value is passed to the downstream connection. This allows you
         to both transform as well as send only selected events.
 
         Errors other than FatalError are handled gracefully by calling
         self.on_error() and then disconnecing from the upstream OutputThing.
-
-        You can, of course, override this entire method. If you do so, be careful
-        to include the correct error handling - this method should never
-        throw any exception other than subclasses of FatalError.
         """
         try:
             x_prime = self._filter(x)
@@ -374,55 +393,92 @@ class Filter(OutputThing, InputThing):
         """Filtering method to be implemented by subclasses.
         """
         return x
+
+    def _complete(self):
+        """Method to be overridden by subclasses. It is called as a part of
+        on_error() and on_completed() to give a chance to pass down a held-back
+        event. Return None if there is no such event.
+
+        You can also clean up any state in this method (e.g. close connections).
+
+        Shold not throw any exceptions other than FatalError.
+        """
+        return None
     
     def on_error(self, e):
-        """The default implementation of on_error just passes the call on to
-        the next thing. If you need to clean up any state, override this method,
-        do your cleanup, and then call super().on_error(e).
+        """Passes on any final event and then passes the notification to the
+        next Thing.
+        If you need to clean up any state, do it in _complete().
         """
+        x = self._complete()
+        if x is not None:
+            self._dispatch_next(x)
         self._dispatch_error(e)
 
     def on_completed(self):
-        """The default implementation of on_completed just passes the call on to
-        the next thing. If you need to clean up any state, override this method,
-        do your cleanup, and then call super().on_completed().
+        """Passes on any final event and then passes the notification to the
+        next Thing.
+        If you need to clean up any state, do it in _complete().
         """
+        x = self._complete()
+        if x is not None:
+            self._dispatch_next(x)
         self._dispatch_completed()
 
-    
+
 class FunctionFilter(Filter):
-    """A filter whose _filter, on_error, and on_completed
-    processing is provided by passed-in functions. The function
-    signatures are:
-        _filter(self, x)
+    """Implement a filter by providing functions that implement the
+    on_next, on_completed, and one_error logic. This is useful
+    when the logic is really simple or when a more functional programming
+    style is more convenient.
+
+    Each function takes a "self" parameter, so it works almost like it was
+    defined as a bound method. The signatures are then:
+        on_next(self, x)
         on_completed(self)
         on_error(self, e)
 
-    If any of the functions are not provided, the base class's method
-    definition remains. Note that _filter() may throw exceptions, but the
-    others should not (other than maybe FatalError).
-
-    The optional name parameter lets you specify a name of the filter
-    to be used when printing this filter via __str__().
+    If a function is not provided to __init__, the base class's implementation
+    of the associated method is assumed.
     """
     def __init__(self, previous_in_chain,
-                 _filter=None, on_completed=None,
+                 on_next=None, on_completed=None,
                  on_error=None, name=None):
+        """name is an option name to be used in __str__() calls.
+        """
         super().__init__(previous_in_chain)
-        if _filter:
-            self._filter = _filter
-        if on_completed:
-            self.on_completed = on_completed
+        if on_next:
+            self._on_next = on_next
+        else:
+            # If no on_next function was specified, we use the
+            # base classes's implementation, which just passes
+            # on the event.
+            self._on_next = super().on_next
         if on_error:
             self.on_error = on_error
-        if self.name:
+        if on_completed:
+            self.on_completed = on_completed
+        if name:
             self.name = name
 
+    def on_next(self, x):
+        try:
+            # we pass in an extra "self" since this is a function, not a method
+            self._on_next(self, x)
+        except FatalError:
+            raise
+        except Exception as e:
+            logger.exception("Got an exception on %s.on_next(%s)" %
+                             (self, x))
+            self.on_error(e)
+            self.disconnect_from_upstream() # stop from getting upstream events
+            
     def __str__(self):
         if hasattr(self, 'name'):
             return self.name
         else:
             return super().__str__()
+
 
 
 def _is_thunk(t):

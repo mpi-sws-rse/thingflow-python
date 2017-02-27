@@ -2,19 +2,19 @@
 # Licensed under the Apache 2.0 License.
 import json
 
-from antevents.base import Publisher, Filter, filtermethod
+from thingflow.base import OutputThing, FunctionFilter, filtermethod
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def to_json(this):
     """Convert the events in the stream to a json string.
     """
     def on_next(self, x):
         self._dispatch_next(json.dumps(x))
         
-    return Filter(this, on_next=on_next, name='to_json')
+    return FunctionFilter(this, on_next=on_next, name='to_json')
 
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def from_json(this, constructor=None):
     """Parse a sequence of json strings. If constructor is specified, the
     parsed value is passed as *args to the constructor to return the actual
@@ -26,5 +26,5 @@ def from_json(this, constructor=None):
             obj = constructor(*obj)
         self._dispatch_next(obj)
         
-    return Filter(this, on_next=on_next, name='from_json')
+    return FunctionFilter(this, on_next=on_next, name='from_json')
 

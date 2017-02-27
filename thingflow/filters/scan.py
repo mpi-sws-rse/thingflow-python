@@ -1,8 +1,8 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-from antevents.base import Publisher, Filter, filtermethod
+from thingflow.base import OutputThing, filtermethod
 
-@filtermethod(Publisher, alias="aggregate")
+@filtermethod(OutputThing, alias="aggregate")
 def reduce(self, accumulator, seed=None):
     """Applies an accumulator function over a sequence,
     returning the result of the aggregation as a single element in the
@@ -21,12 +21,12 @@ def reduce(self, accumulator, seed=None):
 
     return self.scan(accumulator, seed=seed).last()
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def scan(this, accumulator, seed=None):
     """Applies an accumulator function over an observable sequence and
     returns each intermediate result. The optional seed value is used as
     the initial accumulator value. 
-    For aggregation behavior with no intermediate results, see Publisher.aggregate.
+    For aggregation behavior with no intermediate results, see OutputThing.aggregate.
     1 - scanned = source.scan(lambda acc, x: acc + x)
     2 - scanned = source.scan(lambda acc, x: acc + x, 0)
     Keyword arguments:

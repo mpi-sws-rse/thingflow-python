@@ -10,7 +10,7 @@ For those who speak automata, this is a Mealy machine.
 from collections import deque
 from statistics import median
 
-from antevents.base import Publisher, Filter, SensorEvent, filtermethod
+from thingflow.base import OutputThing, XformOrDropFilter, SensorEvent, filtermethod
 
 
 class Transducer:
@@ -24,38 +24,36 @@ class Transducer:
         """
         pass
 
-@filtermethod(Publisher)
+class Transduce(XformOrDropFilter):
+    def __init__(self, previous_in_chain, xformer):
+        super.__init__(self, previous_in_chain)
+        self.xformer = xformer
+
+    def _filter(self, x):
+        return self.xformer(x)
+
+    def _complete(self):
+        return self.xformer.complete()
+
+    def __str__(self):
+        return "transduce(%s)" % self.xformer
+
+
+@filtermethod(OutputThing)
 def transduce(this, xform):
     """Execute a (stateful) transducer to transform the event sequence.
     The transducer provides a step() method to accept a value
     and return the transformation. If the step() returns None,
     no output event is emitted
 
-    Keyword arguments:
+    Arguments:
     :param Transducer transducer: A transducer to execute.
 
-    :returns: An Publisher sequence containing the results from the
+    :returns: An OutputThing sequence containing the results from the
         transducer.
-    :rtype: Publisher
+    :rtype: OutputThing
     """
-    def on_next(self, x):
-        # The base Filter class will handle any exceptions thrown by the
-        # step() call. Don't call _dispatch_error here(), as it will result
-        # in it being called twice. TODO: This is somewhat error prone - need to
-        # think through tis a bit more.
-        x_prime = xform.step(x)
-        if x_prime is not None:
-            self._dispatch_next(x_prime)
-
-    def on_completed(self):
-        x_prime = xform.complete()
-        # there may be a final event to be sent out upon completion
-        if x_prime is not None:
-            self._dispatch_next(x_prime)
-        self._dispatch_completed()
-
-    return Filter(this, on_next=on_next, on_completed=on_completed,
-                  name="transduce(%s)" % xform)
+    return Transduce(this, xform)
 
 
 class SlidingWindowTransducer(Transducer):

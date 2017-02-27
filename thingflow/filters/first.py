@@ -1,10 +1,10 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
 
-from antevents.base import Publisher, filtermethod
-import antevents.linq.take
+from thingflow.base import OutputThing, filtermethod
+import thingflow.filters.take
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def first(this):
     """Take the first element of the stream. Sends out on_completed after
     forwarding the first element. If the stream is empty, we will just 

@@ -1,10 +1,10 @@
-# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Copyright 2016,2017 by MPI-SWS and Data-ken Research.
 # Licensed under the Apache 2.0 License.
 """
 This sub-module provides a collection of filters for providing linq-style
 programming (inspired by RxPy).
 
-Each function appears as a method on the Publisher base class, allowing for
+Each function appears as a method on the OutputThing base class, allowing for
 easy chaining of calls. For example:
     sensor.where(lambda x: x > 100).select(lambda x: x*2)
 
@@ -21,22 +21,21 @@ as well as directly with the scheduler. For example:
 The implementation code for a linq-style filter typically looks like the
 following:
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def example(this, ...):
-    def on_next(self, x):
+    def _filter(self, x):
         ....
-        self._dispatch_next(...)
-    return Filter(this, on_next, name="example")
+    return FunctionFilter(this, _filter, name="example")
 
 Note that, by convention, we use `this` as the first argument of the function,
 rather than self. The `this` parameter corresponds to the previous element in
-the chain, while the `self` parameter used in the on_next() function represents
+the chain, while the `self` parameter used in the _filter() function represents
 the current element in the chain. If you get these mixed up, you can get an
 infinite loop!
 
-In general, a linq-style filter takes the previous publisher/filter in a
+In general, a linq-style filter takes the previous OutputThing/filter in a
 chain as its first input, parameters to the filter as subsequent inputs, and
-returns a publisher/filter that should be used as the input to the next step
+returns a OutputThing/filter that should be used as the input to the next step
 in the filter chain.
 """
 
