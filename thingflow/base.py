@@ -133,9 +133,31 @@ class ExcInDispatch(FatalError):
 # Internal representation of a connection. The first three fields
 # are functions which dispatch to the InputThing. The InputThing and input_port
 # fields are not needed at runtime, but helpful in debugging.
-_Connection = namedtuple('_Connection',
-                           ['on_next', 'on_completed', 'on_error', 'input_thing',
-                            'input_port'])
+# We use a class with slots instead of a named tuple because we want to
+# change the values of the on_next, etc. functions when tracing (tuples
+# are read-only. The attribute access of a named tuple by name is no
+# faster than slots. If we need to spead this up at some point, use a
+# named tuple but access via the index values (at a cost to readability
+# of the code).
+class _Connection:
+    __slots__ = ('on_next', 'on_completed', 'on_error', 'input_thing',
+                 'input_port')
+    def __init__(self, on_next, on_completed, on_error, input_thing,
+                 input_port):
+        self.on_next = on_next
+        self.on_completed = on_completed
+        self.on_error = on_error
+        self.input_thing = input_thing
+        self.input_port = input_port
+
+    def __repr__(self):
+        return '_Connection(%s,%s,%s,%s,%s)' % \
+            (repr(self.on_next), repr(self.on_completed), repr(self.on_error),
+             repr(self.input_thing), repr(self.input_port))
+    
+    def __str__(self):
+        return '_Connection(%s,%s)' % \
+             (str(self.input_thing), str(self.input_port))
 
     
 class OutputThing:
