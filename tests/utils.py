@@ -7,7 +7,7 @@ import unittest
 import random
 random.seed()
 
-from antevents.base import IterableAsPublisher, DefaultSubscriber, FatalError,\
+from thingflow.base import IterableAsOutputThing, InputThing, FatalError,\
      SensorEvent
 
 class RandomSensor:
@@ -53,8 +53,8 @@ class ValueListSensor:
         return 'ValueListSensor(%s)' % self.sensor_id
 
 
-def make_test_publisher(sensor_id, mean=100.0, stddev=20.0, stop_after_events=None):
-    """Here is an exmple test publisher that generates a random value"""
+def make_test_output_thing(sensor_id, mean=100.0, stddev=20.0, stop_after_events=None):
+    """Here is an exmple test output_thing that generates a random value"""
     if stop_after_events is not None:
         def generator():
             for i in range(stop_after_events):
@@ -66,22 +66,22 @@ def make_test_publisher(sensor_id, mean=100.0, stddev=20.0, stop_after_events=No
                 yield SensorEvent(sensor_id, time.time(),
                                   random.gauss(mean, stddev))
     g =  generator()
-    o = IterableAsPublisher(g, name='Sensor(%s)' % sensor_id)
+    o = IterableAsOutputThing(g, name='Sensor(%s)' % sensor_id)
     return o
 
 
-def make_test_publisher_from_vallist(sensor_id, values):
-    """Create a publisher that generates the list of values when sampled, but uses
+def make_test_output_thing_from_vallist(sensor_id, values):
+    """Create a output_thing that generates the list of values when sampled, but uses
     real timestamps.
     """
     def generator():
         for val in values:
             yield SensorEvent(sensor_id, time.time(), val)
-    o = IterableAsPublisher(generator(), name='Sensor(%s)' % sensor_id)
+    o = IterableAsOutputThing(generator(), name='Sensor(%s)' % sensor_id)
     return o
 
 
-class ValidationSubscriber(DefaultSubscriber):
+class ValidationInputThing(InputThing):
     """Compare the values in a event stream to the expected values.
     Use the test_case for the assertions (for proper error reporting in a unit
     test).
@@ -93,10 +93,10 @@ class ValidationSubscriber(DefaultSubscriber):
         self.test_case = test_case # this can be either a method or a class
         self.extract_value_fn = extract_value_fn
         self.completed = False
-        self.name = "ValidationSubscriber(%s)" % \
+        self.name = "ValidationInputThing(%s)" % \
                       test_case.__class__.__name__ \
                     if isinstance(test_case, unittest.TestCase) \
-                    else "ValidationSubscriber(%s.%s)" % \
+                    else "ValidationInputThing(%s.%s)" % \
                       (test_case.__self__.__class__.__name__,
                        test_case.__name__)
 
@@ -129,7 +129,7 @@ class ValidationSubscriber(DefaultSubscriber):
         return self.name
 
         
-class SensorEventValidationSubscriber(DefaultSubscriber):
+class SensorEventValidationInputThing(InputThing):
     """Compare the full events in a sensor event stream to the expected events.
     Use the test_case for the assertions (for proper error reporting in a unit
     test).
@@ -168,8 +168,8 @@ class SensorEventValidationSubscriber(DefaultSubscriber):
                       "Got an unexpected on_error call with parameter: %s" % exc)
 
 
-class ValidateAndStopSubscriber(ValidationSubscriber):
-    """A version of ValidationSubscriber that calls a stop
+class ValidateAndStopInputThing(ValidationInputThing):
+    """A version of ValidationInputThing that calls a stop
     function after the specified events have been received.
     """
     def __init__(self, expected_stream, test_case, stop_fn,
@@ -181,11 +181,11 @@ class ValidateAndStopSubscriber(ValidationSubscriber):
     def on_next(self, x):
         super().on_next(x)
         if self.next_idx==len(self.expected_stream):
-            print("ValidateAndStopSubscriber: stopping")
+            print("ValidateAndStopInputThing: stopping")
             self.stop_fn()
 
 
-class CaptureSubscriber(DefaultSubscriber):
+class CaptureInputThing(InputThing):
     """Capture the sequence of events in a list for later use.
     """
     def __init__(self):

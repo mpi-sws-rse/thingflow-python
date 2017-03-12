@@ -48,7 +48,8 @@ def last(this, default=None):
         else:
             self._dispatch_next(value[0])
             self._dispatch_completed()
-    return FunctionFilter(this, on_next=on_next, on_completed=on_completed)
+    return FunctionFilter(this, on_next=on_next, on_completed=on_completed,
+                          name='last')
 
 @filtermethod(OutputThing)
 def take(this, count):
@@ -68,8 +69,9 @@ def take(this, count):
         if remaining[0] > 0:
             remaining[0] -= 1
             self._dispatch_next(value)
-        if not remaining[0] and completed[0]==False:
+        if remaining[0]==0 and completed[0]==False:
             completed[0] = True
+            self.disconnect_from_upstream()
             self._dispatch_completed()
 
     def on_completed(self):
@@ -77,8 +79,9 @@ def take(this, count):
         # elements. On the other hand, we might still need to provide a notification
         # if the actual sequence length is less than count.
         if completed[0]==False:
+            completed[0] = True
             self._dispatch_completed()
 
     return FunctionFilter(this, on_next=on_next, on_completed=on_completed,
-                          name="skip")
+                          name="take(%s)" % count)
 

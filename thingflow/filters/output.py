@@ -17,13 +17,20 @@ class Output(XformOrDropFilter):
         print(e, file=self.file)
         self._dispatch_error(e)
 
+    def __str__(self):
+        if self.file==stdout:
+            return 'output()'
+        else:
+            return 'output(%s)' % str(self.file)
+        
+
 @filtermethod(OutputThing)
 def output(this, file=stdout):
     """Print each element of the sequence. Exceptions are printed
     as well. We don't call it print, because that will override the
     built-in print function.
     """
-    return Output(this, name="output")
+    return Output(this, file=file)
 
 class OutputCount(XformOrDropFilter):
     def __init__(self, previous_in_chain, file=stdout):

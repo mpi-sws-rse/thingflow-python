@@ -6,11 +6,11 @@
 import asyncio
 import unittest
 
-from antevents.base import Scheduler, SensorPub
-from utils import ValueListSensor, ValidationSubscriber
-from antevents.linq.where import where
-from antevents.linq.output import output
-from antevents.linq.combinators import passthrough
+from thingflow.base import Scheduler, SensorAsOutputThing
+from utils import ValueListSensor, ValidationInputThing
+from thingflow.filters.where import where
+from thingflow.filters.output import output
+from thingflow.filters.combinators import passthrough
 
 value_stream = [
     20,
@@ -42,11 +42,11 @@ class TestBaseScenario(unittest.TestCase):
         """In this version, we create a publisher and use method chaining to
         compose the filters"""
         s = ValueListSensor(1, value_stream)
-        p = SensorPub(s)
+        p = SensorAsOutputThing(s)
         w = p.where(predicate)
         w.output()
-        vo = ValidationSubscriber(expected_stream, self.test_where)
-        w.subscribe(vo)
+        vo = ValidationInputThing(expected_stream, self.test_where)
+        w.connect(vo)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_periodic(p, 0.5) # sample twice every second
         p.print_downstream()
@@ -59,7 +59,7 @@ class TestBaseScenario(unittest.TestCase):
         """In this version, we pass the sensor directly to the scheduler and use
         a functional style to compose the filters"""
         s = ValueListSensor(1, value_stream)
-        vo = ValidationSubscriber(expected_stream, self.test_schedule_sensor)
+        vo = ValidationInputThing(expected_stream, self.test_schedule_sensor)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_sensor(s, 0.5,
                                   where(predicate),

@@ -98,7 +98,11 @@ class CallableAsInputThing:
         setattr(self, _on_completed_name(port), on_completed or noop)
         
     def __str__(self):
-        return 'CallableAsInputThing(%s)' % self.on_next.__str__()
+        return 'CallableAsInputThing(%s)' % str(self.on_next)
+
+    def __repr__(self):
+        return 'CallableAsInputThing(on_next=%s, on_error=%s, on_completed=%s)' % \
+            (repr(self.on_next), repr(self.on_error), repr(self.on_completed))
 
 
 class FatalError(Exception):
@@ -132,6 +136,7 @@ class ExcInDispatch(FatalError):
 _Connection = namedtuple('_Connection',
                            ['on_next', 'on_completed', 'on_error', 'input_thing',
                             'input_port'])
+
     
 class OutputThing:
     """Base class for event generators (output things). The non-underscore
@@ -188,7 +193,16 @@ class OutputThing:
             # we attempt to change the list of connections while iterating over
             # it.
             new_connections = self.__connections__[output_port].copy()
-            new_connections.remove(connection)
+            #new_connections.remove(connection)
+            # we look for a connection to the same port and thing rather than
+            # the same object - the object may have changed due to tracing
+            found = False
+            for c in self.__connections__[output_port]:
+                if c.input_thing==input_thing and c.input_port==input_port:
+                    new_connections.remove(c)
+                    found = True
+                    break
+            assert found
             self.__connections__[output_port] = new_connections
         return disconnect
 
@@ -294,16 +308,16 @@ class OutputThing:
     def print_downstream(self):
         """Recursively print all the downstream paths. This is for debugging.
         """
-        def has_connections(step):
-            if not hasattr(step, '__connections__'):
+        def has_connections(thing):
+            if not hasattr(thing, '__connections__'):
                 return False
-            for port in step.__connections__.keys():
-                if len(step.__connections__[port])>0:
+            for port in thing.__connections__.keys():
+                if len(thing.__connections__[port])>0:
                     return True
             return False
-        def print_from(current_seq, step):
-            if has_connections(step):
-                for (port, connections) in step.__connections__.items():
+        def print_from(current_seq, thing):
+            if has_connections(thing):
+                for (port, connections) in thing.__connections__.items():
                     for connection in connections:
                         if port=='default' and \
                            connection.input_port=='default':
@@ -320,6 +334,66 @@ class OutputThing:
         print_from("  " + self.__str__(), self)
         print("*"*(12+len(self.__str__())))
 
+    def trace_downstream(self):
+        """Install wrappers that print a trace message for each
+        event on this thing and all downsteam things.
+        """
+        def has_connections(thing):
+            if not hasattr(thing, '__connections__'):
+                return False
+            for port in thing.__connections__.keys():
+                if len(thing.__connections__[port])>0:
+                    return True
+            return False
+        def fmt(thing, port):
+            return '%s.%s' % (str(thing), port) if port!='default' \
+                else str(thing)
+        def trace_on_next(thing, output_port, connection, x):
+            print("  %s => (%s) => %s" %
+                  (fmt(thing, output_port), str(x),
+                   fmt(connection.input_thing,
+                       connection.input_port)))
+            connection.on_next(x)
+        def trace_on_error(thing, output_port, connection, error):
+            print("  %s => on_error(%s) => %s" %
+                  (fmt(thing, output_port), str(error),
+                   fmt(connection.input_thing,
+                   connection.input_port)))
+            connection.on_error(error)
+        def trace_on_completed(thing, output_port, connection):
+            print("  %s => on_completed => %s" %
+                  (fmt(thing, output_port),
+                   fmt(connection.input_thing,
+                       connection.input_port)))
+            connection.on_completed()
+            
+        def make_trace_connection(src_thing, output_port, old_connection):
+            return _Connection(
+                on_next=lambda x: trace_on_next(src_thing, output_port,
+                                                old_connection, x),
+                on_error=lambda e: trace_on_error(src_thing, output_port,
+                                                  old_connection, e),
+                on_completed=lambda : trace_on_completed(src_thing,
+                                                         output_port,
+                                                         old_connection),
+                input_thing=old_connection.input_thing,
+                input_port=old_connection.input_port)
+        def trace_from(thing):
+            if has_connections(thing):
+                new_connections = {}
+                for (port, connections) in thing.__connections__.items():
+                    connections_for_port = []
+                    for connection in connections:
+                        trace_from(connection.input_thing)
+                        connections_for_port.append(make_trace_connection(thing,
+                                                                          port,
+                                                                          connection))
+                    new_connections[port] = connections_for_port
+                thing.__connections__ = new_connections
+        trace_from(self)
+        print("***** installed tracing in all paths starting from %s" %
+              str(self))
+        
     def pp_connections(self):
         """pretty print the set of connections"""
         h1 = "***** InputThings for %s *****" % self
@@ -332,7 +406,9 @@ class OutputThing:
                 print("      on_completed: %s" % s.on_completed)
                 print("      on_error: %s" % s.on_error)
         print("*"*len(h1))
-        
+
+    def __str__(self):
+        return self.__class__.__name__ + '()'
                 
 
 class Filter(OutputThing, InputThing):
@@ -356,7 +432,7 @@ class Filter(OutputThing, InputThing):
         self._dispatch_completed()
 
     def __str__(self):
-        return self.__class__.__name__
+        return self.__class__.__name__ + '()'
 
         
 class XformOrDropFilter(Filter):
@@ -365,7 +441,7 @@ class XformOrDropFilter(Filter):
     _complete() methods.
     """
     def __init__(self, previous_in_chain):
-        super.__init__(previous_in_chain)
+        super().__init__(previous_in_chain)
 
     def on_next(self, x):
         """Calls _filter(x) to process
@@ -477,8 +553,7 @@ class FunctionFilter(Filter):
         if hasattr(self, 'name'):
             return self.name
         else:
-            return super().__str__()
-
+            return self.__class__.__name__ + '()'
 
 
 def _is_thunk(t):
@@ -639,6 +714,8 @@ class IterableAsOutputThing(OutputThing, DirectOutputThingMixin):
     def __str__(self):
         if hasattr(self, 'name') and self.name:
             return self.name
+        else:
+            super().__str__()
            
 def from_iterable(i):
     return IterableAsOutputThing(i)
@@ -694,11 +771,6 @@ class FunctionIteratorAsOutputThing(OutputThing, DirectOutputThingMixin):
 def from_func(init, cond, iter, selector):
     return FunctionIteratorAsOutputThing(init, cond, iter, selector)
 
-    def __str__(self):
-        if hasattr(self, 'name') and self.name:
-            return self.name
-        else:
-            super().__str__()
 
 
 # Define a default sensor event as a tuple of sensor id, timestamp, and value.

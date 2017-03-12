@@ -69,7 +69,7 @@ class BufferEventUntilTimeoutOrCount(Filter):
             # pass the timeout_thing's timeout events to my on_timeout_next()
             # method
             self.timeout_thing.connect(self,
-                                       topic_mapping=('default','timeout'))
+                                       port_mapping=('default','timeout'))
             # We start the timeout now.
             # This timeout won't start counting down until we start the scheduler.
             self.timeout_thing.start(interval)
