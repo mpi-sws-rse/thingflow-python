@@ -3,4 +3,5 @@ MANIFEST
 dist/
 build/
 __pycache__
+*.pyc
 thingflow.egg-info/

@@ -4,10 +4,10 @@
 """
 import asyncio
 import unittest
-from antevents.base import Scheduler, Filter
-import antevents.linq.timeout
-import antevents.linq.output
-from utils import make_test_publisher_from_vallist, ValidationSubscriber
+from thingflow.base import Scheduler, FunctionFilter
+import thingflow.filters.timeout
+import thingflow.filters.output
+from utils import make_test_output_thing_from_vallist, ValidationInputThing
 
 def on_next_alternate(self, x):
     if self.keep_mode:
@@ -20,7 +20,7 @@ def on_next_alternate(self, x):
         self.countdown = self.N
         self.keep_mode = not self.keep_mode
 
-class DropPeriodic(Filter):
+class DropPeriodic(FunctionFilter):
     """Allow through N events, drop the next N, and then repeat.
     """
     def __init__(self, previous_in_chain, N=1):
@@ -31,7 +31,7 @@ class DropPeriodic(Filter):
                          name='drop_alternate')
 
 
-class EventWatcher(antevents.linq.timeout.EventWatcher):
+class EventWatcher(thingflow.filters.timeout.EventWatcher):
     """Repeat the last good event
     """
     def __init__(self):
@@ -77,12 +77,12 @@ class TestTimeouts(unittest.TestCase):
         one second. It then supplies the previous event. The resulting
         output stream will show every other value repeated twice.
         """
-        sensor = make_test_publisher_from_vallist(1, sensor_values)
+        sensor = make_test_output_thing_from_vallist(1, sensor_values)
         drop = DropPeriodic(sensor)
         scheduler = Scheduler(asyncio.get_event_loop())
-        vo = ValidationSubscriber(expected_values, self)
+        vo = ValidationInputThing(expected_values, self)
         drop.supply_event_when_timeout(EventWatcher(),
-                                       scheduler, 1.1).output().subscribe(vo)
+                                       scheduler, 1.1).output().connect(vo)
         scheduler.schedule_periodic(sensor, 1)            
         sensor.print_downstream()
         scheduler.run_forever()
@@ -95,12 +95,12 @@ class TestTimeouts(unittest.TestCase):
         good value is supplied when the timeout expires. Thus, we should see
         two good events, two repeats of the first event, two good events, etc.
         """
-        sensor = make_test_publisher_from_vallist(1, sensor_values)
+        sensor = make_test_output_thing_from_vallist(1, sensor_values)
         drop = DropPeriodic(sensor, N=2)
         scheduler = Scheduler(asyncio.get_event_loop())
-        vo = ValidationSubscriber(expected_values_multiple_timeouts, self)
+        vo = ValidationInputThing(expected_values_multiple_timeouts, self)
         drop.supply_event_when_timeout(EventWatcher(),
-                                       scheduler, 1.1).output().subscribe(vo)
+                                       scheduler, 1.1).output().connect(vo)
         scheduler.schedule_periodic(sensor, 1)            
         sensor.print_downstream()
         scheduler.run_forever()

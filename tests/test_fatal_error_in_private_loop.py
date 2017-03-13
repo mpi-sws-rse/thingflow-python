@@ -4,8 +4,8 @@
 we shut down cleanly and don't lose the error.
 """
 
-import antevents.linq.output
-from antevents.base import Scheduler, Publisher, EventLoopPublisherMixin, FatalError
+import thingflow.filters.output
+from thingflow.base import Scheduler, OutputThing, EventLoopOutputThingMixin, FatalError
 
 import unittest
 import asyncio
@@ -13,7 +13,7 @@ s = Scheduler(asyncio.get_event_loop())
 
 import time
 
-class TestPublisher(Publisher, EventLoopPublisherMixin):
+class TestOutputThing(OutputThing, EventLoopOutputThingMixin):
     def __init__(self):
         super().__init__()
 
@@ -28,7 +28,7 @@ class TestPublisher(Publisher, EventLoopPublisherMixin):
 
 class TestFatalErrorInPrivateLoop(unittest.TestCase):
     def test_case(self):
-        m = TestPublisher()
+        m = TestOutputThing()
         m.output()
         c = s.schedule_on_private_event_loop(m)
         m.print_downstream()

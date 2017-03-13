@@ -3,13 +3,13 @@
 """Cancel an active schedule. Since this is the last active schedule, it
 should cleanly stop the scheduler.
 """
-from antevents.base import *
-from utils import make_test_publisher
+from thingflow.base import *
+from utils import make_test_output_thing
 
 import asyncio
 import unittest
 
-class CallAfter(DefaultSubscriber):
+class CallAfter(InputThing):
     def __init__(self, num_events, fn):
         self.events_left = num_events
         self.fn = fn
@@ -22,11 +22,11 @@ class CallAfter(DefaultSubscriber):
 
 class TestSchedulerCancel(unittest.TestCase):
     def test_case(self):
-        sensor = make_test_publisher(1)
-        sensor.subscribe(print)
+        sensor = make_test_output_thing(1)
+        sensor.connect(print)
         s = Scheduler(asyncio.get_event_loop())
         cancel_schedule = s.schedule_periodic(sensor, 1)
-        sensor.subscribe(CallAfter(4, cancel_schedule))
+        sensor.connect(CallAfter(4, cancel_schedule))
         sensor.print_downstream()
         s.run_forever()
         print("got to end")

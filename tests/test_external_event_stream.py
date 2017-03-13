@@ -4,15 +4,15 @@
 We use the MQTT reader with the mock client to test this
 (does not require an mqtt broker).
 """
-import antevents.linq.output
-from antevents.base import Scheduler, DefaultSubscriber
-from antevents.adapters.mqtt import MQTTReader, MockMQTTClient
+import thingflow.filters.output
+from thingflow.base import Scheduler, InputThing
+from thingflow.adapters.mqtt import MQTTReader, MockMQTTClient
 
 import unittest
 import asyncio
 
 
-class StopLoopAfter(DefaultSubscriber):
+class StopLoopAfter(InputThing):
     def __init__(self, stop_after, cancel_thunk):
         self.events_left = stop_after
         self.cancel_thunk = cancel_thunk
@@ -29,11 +29,11 @@ class TestExternalEventStream(unittest.TestCase):
         events.
         """
         s = Scheduler(asyncio.get_event_loop())
-        m = MQTTReader("localhost", topics=[('bogus/bogus', 0),],
+        m = MQTTReader("localhost", ports=[('bogus/bogus', 0),],
                        mock_class=MockMQTTClient)
         m.output()
         c = s.schedule_on_private_event_loop(m)
-        m.subscribe(StopLoopAfter(4, c))
+        m.connect(StopLoopAfter(4, c))
         m.print_downstream()
         s.run_forever()
         print("that's it")

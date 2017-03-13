@@ -26,11 +26,11 @@ class Transducer:
 
 class Transduce(XformOrDropFilter):
     def __init__(self, previous_in_chain, xformer):
-        super.__init__(self, previous_in_chain)
+        super().__init__(previous_in_chain)
         self.xformer = xformer
 
     def _filter(self, x):
-        return self.xformer(x)
+        return self.xformer.step(x)
 
     def _complete(self):
         return self.xformer.complete()

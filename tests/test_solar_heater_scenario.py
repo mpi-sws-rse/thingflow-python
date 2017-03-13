@@ -39,12 +39,12 @@ TOO_HOT       | T2          |        OFF   | NORMAL
 import asyncio
 import unittest
 
-import antevents.linq.transducer
-import antevents.linq.where
-import antevents.linq.first
-import antevents.linq.dispatch
-from antevents.base import *
-from utils import ValidationSubscriber
+import thingflow.filters.transducer
+import thingflow.filters.where
+import thingflow.filters.first
+import thingflow.filters.dispatch
+from thingflow.base import *
+from utils import ValidationInputThing
 
 # constants
 T1 = 120 # too hot threshold is this in Farenheit
@@ -56,7 +56,7 @@ INITIAL = "INITIAL"
 NORMAL  = "NORMAL"
 TOO_HOT ="TOO_HOT"
 
-class RunningAvg(antevents.linq.transducer.Transducer):
+class RunningAvg(thingflow.filters.transducer.Transducer):
     """Transducer that returns a running average of values
     of over the history interval. Note that the interval is a time period,
     not a number of samples.
@@ -84,7 +84,7 @@ class RunningAvg(antevents.linq.transducer.Transducer):
         return 'RunningAvg(%s)' % self.history_interval
 
 
-class Controller(Publisher):
+class Controller(OutputThing):
     """Input sensor events and output actuator settings.
     """
     def __init__(self):
@@ -140,7 +140,7 @@ def sensor_from_sequence(sensor_id, sequence):
         for (ts, v) in sequence:
             yield SensorEvent(sensor_id, ts, v)
 
-    o = IterableAsPublisher(generator(), name='Sensor(%s)' % sensor_id)
+    o = IterableAsOutputThing(generator(), name='Sensor(%s)' % sensor_id)
     return o
 
 
@@ -152,21 +152,21 @@ expected_sequence= ['OFF', 'ON', 'OFF']
 class TestSolarHeater(unittest.TestCase):
     def test_case(self):
         sensor = sensor_from_sequence(1, input_sequence)
-        sensor.subscribe(print)
+        sensor.connect(print)
         dispatcher = sensor.transduce(RunningAvg(2)) \
                            .dispatch([(lambda v: v[2]>=T1, 't1'),
                                       (lambda v: v[2]<=T2, 't2')])
         controller = Controller()
-        dispatcher.subscribe(controller, topic_mapping=('t1', 't1'))
-        dispatcher.subscribe(controller, topic_mapping=('t2', 't2'))
+        dispatcher.connect(controller, port_mapping=('t1', 't1'))
+        dispatcher.connect(controller, port_mapping=('t2', 't2'))
         # we only push the between message to the controller for the first
         # event - it is only needed for emitting an output from the initial
         # state.
-        dispatcher.first().subscribe(controller, topic_mapping=('default',
+        dispatcher.first().connect(controller, port_mapping=('default',
                                                                 'between'))
-        controller.subscribe(print)
-        vo = ValidationSubscriber(expected_sequence, self)
-        controller.subscribe(vo)
+        controller.connect(print)
+        vo = ValidationInputThing(expected_sequence, self)
+        controller.connect(vo)
         sensor.print_downstream()
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_periodic(sensor, 0.5)

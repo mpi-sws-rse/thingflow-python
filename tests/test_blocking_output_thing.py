@@ -1,22 +1,22 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-"""Run an publisher that might block in a separate background thread
+"""Run an output_thing that might block in a separate background thread
 """
 import time
 import unittest
 
-from antevents.base import Publisher, DirectPublisherMixin, DefaultSubscriber,\
+from thingflow.base import OutputThing, DirectOutputThingMixin, InputThing,\
     Scheduler
-from antevents.linq.combinators import passthrough
-from antevents.linq.output import output
-from utils import ValidationSubscriber
+from thingflow.filters.combinators import passthrough
+from thingflow.filters.output import output
+from utils import ValidationInputThing
 
 import asyncio
 
 EVENTS = 4
 
 
-class BlockingPublisher(Publisher, DirectPublisherMixin):
+class BlockingOutputThing(OutputThing, DirectOutputThingMixin):
     def __init__(self):
         super().__init__()
         self.event_count = 0
@@ -27,7 +27,7 @@ class BlockingPublisher(Publisher, DirectPublisherMixin):
         self._dispatch_next(self.event_count)
         
 
-class StopLoopAfter(DefaultSubscriber):
+class StopLoopAfter(InputThing):
     def __init__(self, stop_after, cancel_thunk):
         self.events_left = stop_after
         self.cancel_thunk = cancel_thunk
@@ -57,15 +57,15 @@ class BlockingSensor:
 
 
 class TestCase(unittest.TestCase):
-    def test_blocking_publisher(self):
-        o = BlockingPublisher()
+    def test_blocking_output_thing(self):
+        o = BlockingOutputThing()
         o.output()
         scheduler = Scheduler(asyncio.get_event_loop())
         c = scheduler.schedule_periodic_on_separate_thread(o, 1)
-        vs = ValidationSubscriber([i+1 for i in range(EVENTS)], self,
+        vs = ValidationInputThing([i+1 for i in range(EVENTS)], self,
                                   extract_value_fn=lambda v:v)
-        o.subscribe(vs)
-        o.subscribe(StopLoopAfter(EVENTS, c))
+        o.connect(vs)
+        o.connect(StopLoopAfter(EVENTS, c))
         o.print_downstream()
         scheduler.run_forever()
         print("that's it")
@@ -75,7 +75,7 @@ class TestCase(unittest.TestCase):
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_sensor_on_separate_thread(s, 1,
             passthrough(output()),
-            ValidationSubscriber([i+1 for i in range(EVENTS)], self,
+            ValidationInputThing([i+1 for i in range(EVENTS)], self,
                                  extract_value_fn=lambda v:v),
             make_event_fn=lambda s, v: v)
         scheduler.run_forever()

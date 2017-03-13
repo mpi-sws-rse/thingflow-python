@@ -2,14 +2,14 @@
 # Licensed under the Apache 2.0 License.
 """Test that a fatal error causes the scheduler to exit.
 """
-from antevents.base import *
-from utils import make_test_publisher
+from thingflow.base import *
+from utils import make_test_output_thing
 
 import sys
 import asyncio
 import unittest
 
-class DieAfter(DefaultSubscriber):
+class DieAfter(InputThing):
     def __init__(self, num_events):
         self.events_left = num_events
 
@@ -21,14 +21,14 @@ class DieAfter(DefaultSubscriber):
 
 class TestFatalErrorHandling(unittest.TestCase):
     def test_case(self):
-        sensor = make_test_publisher(1)
-        sensor.subscribe(print)
-        sensor2 = make_test_publisher(2)
-        sensor2.subscribe(print)
+        sensor = make_test_output_thing(1)
+        sensor.connect(print)
+        sensor2 = make_test_output_thing(2)
+        sensor2.connect(print)
         s = Scheduler(asyncio.get_event_loop())
         s.schedule_periodic(sensor, 1)
         s.schedule_periodic(sensor2, 1)
-        sensor.subscribe(DieAfter(4))
+        sensor.connect(DieAfter(4))
         sensor.print_downstream()
         try:
             s.run_forever()

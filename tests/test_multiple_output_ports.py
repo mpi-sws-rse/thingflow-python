@@ -2,26 +2,26 @@
 # Licensed under the Apache 2.0 License.
 """
 Build a filter that takes an input stream and dispatches to one of several
-output topics based on the input value.
+output ports based on the input value.
 """
 
 import asyncio
 import unittest
 
-from antevents.base import Publisher, DefaultSubscriber, Scheduler
-from utils import make_test_publisher
-import antevents.linq.where
-import antevents.linq.output
+from thingflow.base import OutputThing, InputThing, Scheduler
+from utils import make_test_output_thing
+import thingflow.filters.where
+import thingflow.filters.output
 
-class SplitPublisher(Publisher, DefaultSubscriber):
+class SplitOutputThing(OutputThing, InputThing):
     """Here is a filter that takes a sequence of sensor events as its input
-    and the splits it into one of three output topics: 'below' if the
+    and the splits it into one of three output ports: 'below' if the
     value is below one standard deviation from the mean, 'above'
     if the value is above one standard deviation from the mean, and
     'within' if the value is within a standard deviation from the mean.
     """
     def __init__(self, mean=100.0, stddev=20.0):
-        Publisher.__init__(self, topics=['above', 'below', 'within'])
+        OutputThing.__init__(self, ports=['above', 'below', 'within'])
         self.mean = mean
         self.stddev = stddev
 
@@ -29,28 +29,28 @@ class SplitPublisher(Publisher, DefaultSubscriber):
         val = x[2]
         if val < (self.mean-self.stddev):
             #print("split: value=%s dispatching to below" % val)
-            self._dispatch_next(val, topic='below')
+            self._dispatch_next(val, port='below')
         elif val > (self.mean+self.stddev):
             #print("split: value=%s dispatching to above" % val)
-            self._dispatch_next(val, topic='above')
+            self._dispatch_next(val, port='above')
         else:
             #print("split: value=%s dispatching to within" % val)
-            self._dispatch_next(val, topic='within')
+            self._dispatch_next(val, port='within')
 
     def __str__(self):
-        return "SplitPublisher"
+        return "SplitOutputThing"
 
-class TestMultiplePubtopics(unittest.TestCase):
+class TestMultiplePubports(unittest.TestCase):
     def test_case(self):
-        sensor = make_test_publisher(1, stop_after_events=10)
-        split= SplitPublisher()
-        sensor.subscribe(split)
-        split.subscribe(lambda x: print("above:%s" % x),
-                        topic_mapping=('above','default'))
-        split.subscribe(lambda x: print("below:%s" % x),
-                        topic_mapping=('below', 'default'))
-        split.subscribe(lambda x: print("within:%s" % x),
-                        topic_mapping=('within', 'default'))
+        sensor = make_test_output_thing(1, stop_after_events=10)
+        split= SplitOutputThing()
+        sensor.connect(split)
+        split.connect(lambda x: print("above:%s" % x),
+                        port_mapping=('above','default'))
+        split.connect(lambda x: print("below:%s" % x),
+                        port_mapping=('below', 'default'))
+        split.connect(lambda x: print("within:%s" % x),
+                        port_mapping=('within', 'default'))
 
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_periodic(sensor, 1)

@@ -1,17 +1,17 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-"""Test of IterableAsPublisher. This was originally test_base.py, but we then
+"""Test of IterableAsOutputThing. This was originally test_base.py, but we then
 added the sensor infrastructure and rewrote the test. This test verfies the
-specific IterableAsPublisher code.
+specific IterableAsOutputThing code.
 """
 
 import asyncio
 import unittest
 
-from antevents.base import Scheduler
-from utils import make_test_publisher_from_vallist, ValidationSubscriber
-import antevents.linq.where
-import antevents.linq.output
+from thingflow.base import Scheduler
+from utils import make_test_output_thing_from_vallist, ValidationInputThing
+import thingflow.filters.where
+import thingflow.filters.output
 
 value_stream = [
     20,
@@ -37,13 +37,13 @@ def predicate(v):
         print("v=%s, False" % v[2])
         return False
 
-class TestIterableAsPublisher(unittest.TestCase):
+class TestIterableAsOutputThing(unittest.TestCase):
     def test_where(self):
-        s = make_test_publisher_from_vallist(1, value_stream)
+        s = make_test_output_thing_from_vallist(1, value_stream)
         w = s.where(predicate)
         w.output()
-        vo = ValidationSubscriber(expected_stream, self)
-        w.subscribe(vo)
+        vo = ValidationInputThing(expected_stream, self)
+        w.connect(vo)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_periodic(s, 0.5) # sample twice every second
         s.print_downstream()
