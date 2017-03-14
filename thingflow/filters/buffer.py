@@ -24,7 +24,6 @@ def buffer_with_count(this, count):
             q[0] = []
 
     def on_completed(self):
-        print("Buffer: on_completed")
         self._dispatch_next(q[0])
         q[0] = []
         self._dispatch_completed()

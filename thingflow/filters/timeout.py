@@ -31,7 +31,6 @@ class Timeout(OutputThing, DirectOutputThingMixin):
         """
         self.cancel = None
         self._dispatch_next(self.timeout_thunk())
-        return True
 
 class EventWatcher:
     """Watch the event stream and then produce an event for a timeout

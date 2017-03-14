@@ -552,10 +552,8 @@ class FunctionFilter(Filter):
             # base classes's implementation, which just passes
             # on the event.
             self._on_next = super().on_next
-        if on_error:
-            self.on_error = on_error
-        if on_completed:
-            self.on_completed = on_completed
+        self._on_error = on_error
+        self._on_completed = on_completed
         if name:
             self.name = name
 
@@ -570,6 +568,18 @@ class FunctionFilter(Filter):
                              (self, x))
             self.on_error(e)
             self.disconnect_from_upstream() # stop from getting upstream events
+
+    def on_completed(self):
+        if self._on_completed:
+            self._on_completed(self)
+        else:
+            super().on_completed()
+
+    def on_error(self, x):
+        if self._on_error:
+            self._on_error(self, x)
+        else:
+            super().on_error(x)
             
     def __str__(self):
         if hasattr(self, 'name'):
