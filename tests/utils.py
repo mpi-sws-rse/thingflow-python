@@ -6,6 +6,9 @@ import time
 import unittest
 import random
 random.seed()
+import sys
+import traceback
+import pdb
 
 from thingflow.base import IterableAsOutputThing, InputThing, FatalError,\
      SensorEvent
@@ -200,3 +203,14 @@ class CaptureInputThing(InputThing):
 
     def on_error(self, e):
         raise FatalError("Should not get on_error, got on_error(%s)" % e)
+
+
+def trace_on_error(f):
+    def decorator(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            info = sys.exc_info()
+            traceback.print_exception(*info)
+            pdb.post_mortem(info[2])
+    return decorator

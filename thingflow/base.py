@@ -536,8 +536,7 @@ class FunctionFilter(Filter):
         on_completed(self)
         on_error(self, e)
 
-    If a function is not provided to __init__, the base class's implementation
-    of the associated method is assumed.
+    If a function is not provided to __init__, we just dispatch the call downstream.
     """
     def __init__(self, previous_in_chain,
                  on_next=None, on_completed=None,
@@ -545,24 +544,19 @@ class FunctionFilter(Filter):
         """name is an option name to be used in __str__() calls.
         """
         super().__init__(previous_in_chain)
-        if on_next:
-            self._on_next = on_next
-        else:
-            # If no on_next function was specified, we use the
-            # base classes's implementation, which just passes
-            # on the event.
-            self._on_next = super().on_next
-        if on_error:
-            self.on_error = on_error
-        if on_completed:
-            self.on_completed = on_completed
+        self._on_next = on_next
+        self._on_error = on_error
+        self._on_completed = on_completed
         if name:
             self.name = name
 
     def on_next(self, x):
         try:
-            # we pass in an extra "self" since this is a function, not a method
-            self._on_next(self, x)
+            if self._on_next:
+                # we pass in an extra "self" since this is a function, not a method
+                self._on_next(self, x)
+            else:
+                self._dispatch_next(x)
         except FatalError:
             raise
         except Exception as e:
@@ -570,7 +564,19 @@ class FunctionFilter(Filter):
                              (self, x))
             self.on_error(e)
             self.disconnect_from_upstream() # stop from getting upstream events
-            
+
+    def on_error(self, e):
+        if self._on_error:
+            self._on_error(self, e)
+        else:
+            self._dispatch_error(e)
+        
+    def on_completed(self):
+        if self._on_completed:
+            self._on_completed(self)
+        else:
+            self._dispatch_completed()
+
     def __str__(self):
         if hasattr(self, 'name'):
             return self.name
