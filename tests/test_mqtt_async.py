@@ -14,7 +14,6 @@ from thingflow.base import Scheduler, SensorAsOutputThing, SensorEvent
 import thingflow.filters.output
 import thingflow.filters.combinators
 import thingflow.filters.select
-from thingflow.adapters.mqtt_async import QueueWriter, QueueReader
 from thingflow.filters.transducer import PeriodicMedianTransducer
 from utils import ValueListSensor, ValidateAndStopInputThing
 
@@ -22,6 +21,7 @@ seed()
 
 try:
     import hbmqtt
+    from thingflow.adapters.mqtt_async import QueueWriter, QueueReader
     HBMQTT_AVAILABLE = True
 except ImportError:
     HBMQTT_AVAILABLE = False

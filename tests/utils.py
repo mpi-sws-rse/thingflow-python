@@ -191,9 +191,11 @@ class ValidateAndStopInputThing(ValidationInputThing):
 class CaptureInputThing(InputThing):
     """Capture the sequence of events in a list for later use.
     """
-    def __init__(self):
+    def __init__(self, expecting_error=False):
         self.events = []
         self.completed = False
+        self.expecting_error = expecting_error
+        self.errored = False
 
     def on_next(self, x):
         self.events.append(x)
@@ -202,7 +204,10 @@ class CaptureInputThing(InputThing):
         self.completed = True
 
     def on_error(self, e):
-        raise FatalError("Should not get on_error, got on_error(%s)" % e)
+        if self.expecting_error:
+            self.errored = True
+        else:
+            raise FatalError("Should not get on_error, got on_error(%s)" % e)
 
 
 def trace_on_error(f):
