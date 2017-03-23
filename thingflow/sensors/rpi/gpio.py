@@ -9,10 +9,10 @@ to the Raspberry Pi GPIO pins. For sensors which use I2C or SPI, with their
 own registers, a library to use them has to be written separately.
 """
 
-from antevents.base import Publisher, IndirectPublisherMixin
+from thingflow.base import OutputThing, IndirectOutputThingMixin
 
 import RPi.GPIO as GPIO
-class RPISensor(Publisher, IndirectPublisherMixin):
+class RPISensor(OutputThing, IndirectOutputThingMixin):
     """Sensor connected to Raspberry Pi. Output of sensor is digital
     (RPi does not come with an ADC unlike the Arduino)
     """

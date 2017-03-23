@@ -2,7 +2,7 @@
 # Licensed under the Apache 2.0 License.
 """Sensor for the ADXL345 accelerometer.
 Code originally from https://github.com/pimoroni/adxl345-python,
-with edits for AntEvents"""
+with edits for ThingFlow"""
 
 #
 # ADXL345 Python library for Raspberry Pi 
@@ -14,11 +14,10 @@ with edits for AntEvents"""
 # the Adafruit Triple Axis ADXL345 breakout board:
 # http://shop.pimoroni.com/products/adafruit-triple-axis-accelerometer
 #
-# Changes for AntEvents:
-# Minor edit to print statement for Python 3 and AntEvents API changes (need sensor_id)
+# Changes for ThingFlow:
+# Minor edit to print statement for Python 3 and ThingFlow API changes (need sensor_id)
 
 import smbus
-from time import sleep
 
 # select the correct i2c bus for this revision of Raspberry Pi
 revision = ([l[12:-1] for l in open('/proc/cpuinfo','r').readlines() if l[:8]=="Revision"]+['0000'])[0]
@@ -53,7 +52,7 @@ class ADXL345:
     address = None
 
     def __init__(self, sensor_id, address = 0x53):        
-		  self.sensor_id = sensor_id        
+        self.sensor_id = sensor_id
         self.address = address
         self.setBandwidthRate(BW_RATE_100HZ)
         self.setRange(RANGE_2G)

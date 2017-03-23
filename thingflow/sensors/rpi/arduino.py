@@ -13,13 +13,13 @@ straight to the  Arduino pins. For sensors which use I2C or SPI, with their
 own registers, a library to use them has to be written separately.
 """
 
-from antevents.base import Publisher, IndirectPublisherMixin
+from thingflow.base import OutputThing, IndirectOutputThingMixin
 
 
 from nanpy import ArduinoApi,SerialManager
 ardApi = ArduinoApi(connection=SerialManager(device = '/dev/ttyACM0'))
 
-class ArduinoSensor(Publisher, IndirectPublisherMixin):
+class ArduinoSensor(OutputThing, IndirectOutputThingMixin):
     """Sensor connected to Arduino. Output is analogue(1/0) or digital output(0 - 1023). Nanpy firmware needs to be flashed onto Arduino.
     """    
     def __init__(self,sensor_id,AD):
