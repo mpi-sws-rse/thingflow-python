@@ -8,7 +8,7 @@
 ###########################
 # We define the test names here. Given a name NAME, the python file should be NAME.py.
 # The tests will be run in order, unless a subset is provided on the command line.
-TESTS="test_base test_iterable_as_output_thing test_external_event_stream test_multiple_output_ports test_linq test_transducer test_scheduler_cancel test_fatal_error_handling test_fatal_error_in_private_loop test_blocking_output_thing test_solar_heater_scenario test_timeout test_blocking_input_thing test_postgres_adapters test_mqtt test_mqtt_async test_csv_adapters test_functional_api test_tracing test_pandas"
+TESTS="test_base test_iterable_as_output_thing test_external_event_stream test_multiple_output_ports test_linq test_transducer test_scheduler_cancel test_fatal_error_handling test_fatal_error_in_private_loop test_blocking_output_thing test_solar_heater_scenario test_timeout test_blocking_input_thing test_postgres_adapters test_mqtt test_mqtt_async test_csv_adapters test_functional_api test_tracing test_pandas test_rpi_adapters"
 
 
 
