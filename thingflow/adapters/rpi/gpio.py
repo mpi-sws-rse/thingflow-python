@@ -6,9 +6,9 @@ Output on raspberry pi gpio pins
 
 import RPi.GPIO as gpio
 
-from antevents.base import DefaultSubscriber, SensorEvent
+from thingflow.base import InputThing, SensorEvent
 
-class GpioPinOut(DefaultSubscriber):
+class GpioPinOut(InputThing):
     """Actuator for an output pin on the GPIO bus.
     """
     def __init__(self, port=11):
