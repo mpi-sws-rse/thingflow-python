@@ -1,8 +1,8 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-from antevents.base import BlockingSubscriber, Publisher, DirectPublisherMixin,\
+from thingflow.base import BlockingInputThing, OutputThing, DirectOutputThingMixin,\
                            FatalError, SensorEvent
-from antevents.adapters.generic import EventRowMapping
+from thingflow.adapters.generic import EventRowMapping
 
 import datetime
 import psycopg2
@@ -10,7 +10,7 @@ import psycopg2
 class DatabaseMapping(EventRowMapping):
     def __init__(self, table_name):
         """Define how we map between the event and database world for
-        a given topic. field_to_colname mappings should be a list
+        a given port. field_to_colname mappings should be a list
         of (field_name, column_name) pairs.
         """
         self.table_name = table_name
@@ -86,7 +86,7 @@ def delete_sensor_table(conn, table_name):
     exe("drop sequence if exists %s;" % seqname)
     
 
-class PostgresWriter(BlockingSubscriber):
+class PostgresWriter(BlockingInputThing):
     """Write the events to the database.
     """
     def __init__(self, scheduler, connect_string, mapping):
@@ -94,7 +94,7 @@ class PostgresWriter(BlockingSubscriber):
         self.conn = psycopg2.connect(connect_string)
         super().__init__(scheduler)
 
-    def _on_next(self, topic, x):
+    def _on_next(self, port, x):
         data = self.mapping.event_to_row(x)
         cur = self.conn.cursor()
         cur.execute(self.mapping.insert_sql,data)
@@ -102,19 +102,19 @@ class PostgresWriter(BlockingSubscriber):
         self.conn.commit()
         cur.close()
 
-    def _on_completed(self, topic):
+    def _on_completed(self, port):
         pass
 
-    def _on_error(self, topic):
+    def _on_error(self, port):
         pass
 
     def _close(self):
         self.conn.close()
 
 
-class PostgresReader(Publisher, DirectPublisherMixin):
-    """Read a row from the table to the default topic each
-    time _observe() is called. Note that this publisher signals
+class PostgresReader(OutputThing, DirectOutputThingMixin):
+    """Read a row from the table to the default port each
+    time _observe() is called. Note that this output_thing signals
     completed when it finishes the query. We could also imagine a
     version that keeps looking for new rows, re-running the query
     as needed.

@@ -4,7 +4,7 @@
 Generic reader and writer classes, to be subclassed for specific adapters.
 """
 
-from antevents.base import Publisher, DirectPublisherMixin, FatalError
+from thingflow.base import OutputThing, DirectOutputThingMixin, FatalError
 
 class EventRowMapping:
     """Interface that converts between events and "rows"
@@ -21,7 +21,7 @@ class EventRowMapping:
         raise NotImplemented
 
 
-class DirectReader(Publisher, DirectPublisherMixin):
+class DirectReader(OutputThing, DirectOutputThingMixin):
     """A reader that can be run in the current thread (does not block
     indefinitely). Reads rows from the iterable, converts them to events
     using the mapping and passes them on.

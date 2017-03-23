@@ -1,1 +1,3 @@
 config_for_tests.py
+*.err
+*.out

@@ -10,11 +10,11 @@ import os
 import asyncio
 import datetime
 
-from antevents.base import Scheduler, IterableAsPublisher, SensorEvent
-from antevents.adapters.csv import CsvReader, default_event_mapper
-import antevents.linq.dispatch
-from utils import make_test_publisher, CaptureSubscriber, \
-    SensorEventValidationSubscriber
+from thingflow.base import Scheduler, IterableAsOutputThing, SensorEvent
+from thingflow.adapters.csv import CsvReader, default_event_mapper
+import thingflow.filters.dispatch
+from utils import make_test_output_thing, CaptureInputThing, \
+    SensorEventValidationInputThing
 
 NUM_EVENTS=5
 
@@ -32,24 +32,24 @@ class TestCases(unittest.TestCase):
         tf = NamedTemporaryFile(mode='w', delete=False)
         tf.close()
         try:
-            sensor = make_test_publisher(1, stop_after_events=NUM_EVENTS)
-            capture = CaptureSubscriber()
-            sensor.subscribe(capture)
+            sensor = make_test_output_thing(1, stop_after_events=NUM_EVENTS)
+            capture = CaptureInputThing()
+            sensor.connect(capture)
             sensor.csv_writer(tf.name)
             scheduler = Scheduler(asyncio.get_event_loop())
             scheduler.schedule_recurring(sensor)
             print("Writing sensor events to temp file")
             scheduler.run_forever()
-            self.assertTrue(capture.completed, "CaptureSubscriber did not complete")
+            self.assertTrue(capture.completed, "CaptureInputThing did not complete")
             self.assertEqual(len(capture.events), NUM_EVENTS,
                              "number of events captured did not match generated events")
             reader = CsvReader(tf.name)
-            vs = SensorEventValidationSubscriber(capture.events, self)
-            reader.subscribe(vs)
+            vs = SensorEventValidationInputThing(capture.events, self)
+            reader.connect(vs)
             scheduler.schedule_recurring(reader)
             print("reading sensor events back from temp file")
             scheduler.run_forever()
-            self.assertTrue(vs.completed, "ValidationSubscriber did not complete")
+            self.assertTrue(vs.completed, "ValidationInputThing did not complete")
         finally:
             os.remove(tf.name)
 
@@ -94,10 +94,10 @@ class TestRollingCsvWriter(unittest.TestCase):
         def generator():
             for e in EVENTS:
                 yield e
-        sensor = IterableAsPublisher(generator(), name='sensor')
+        sensor = IterableAsOutputThing(generator(), name='sensor')
         sensor.rolling_csv_writer('.', 'dining-room')
-        vs = SensorEventValidationSubscriber(EVENTS, self)
-        sensor.subscribe(vs)
+        vs = SensorEventValidationInputThing(EVENTS, self)
+        sensor.connect(vs)
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_recurring(sensor)
         scheduler.run_forever()
@@ -112,11 +112,11 @@ class TestRollingCsvWriter(unittest.TestCase):
         def generator():
             for e in EVENTS2:
                 yield e
-        sensor = IterableAsPublisher(generator(), name='sensor')
+        sensor = IterableAsOutputThing(generator(), name='sensor')
         dispatcher = sensor.dispatch(dispatch_rules)
         for s in sensor_ids:
-            dispatcher.rolling_csv_writer('.', s, sub_topic=s)
-        dispatcher.subscribe(lambda x: self.assertTrue(False, "bad dispatch of %s" % x))
+            dispatcher.rolling_csv_writer('.', s, sub_port=s)
+        dispatcher.connect(lambda x: self.assertTrue(False, "bad dispatch of %s" % x))
         scheduler = Scheduler(asyncio.get_event_loop())
         scheduler.schedule_recurring(sensor)
         scheduler.run_forever()

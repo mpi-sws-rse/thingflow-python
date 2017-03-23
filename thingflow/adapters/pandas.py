@@ -2,15 +2,15 @@
 # Licensed under the Apache 2.0 License.
 """
 Pandas (http://pandas.pydata.org) is a data analysis library.
-This module contains adapters for converting between antevents
+This module contains adapters for converting between thingflow
 event streams and Pandas data types.
 """
 import datetime
 import pandas as pd
 
-from antevents.base import DefaultSubscriber
+from thingflow.base import InputThing
 
-class PandasSeriesWriter(DefaultSubscriber):
+class PandasSeriesWriter(InputThing):
     """Create a pandas Series object corresponding to the
     event stream passed to this subscriber.
     """

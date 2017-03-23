@@ -3,7 +3,7 @@
 """Test mqtt broker
 
 In addition to testing mqtt publish/subscribe functionality, this runs a
-publisher that has its own event loop.
+output_thing that has its own event loop.
 
 To run the test, you will need the paho-mqtt client and the mosquitto broker.
 You can get the client via:
@@ -20,12 +20,12 @@ We assume that the broker is listening on localhost:1883.
 
 import unittest
 import sys
-import antevents.linq.output
-import antevents.linq.json
-import antevents.linq.select
-from antevents.base import Scheduler, DefaultSubscriber, SensorEvent
-from antevents.adapters.mqtt import MQTTReader, MQTTWriter
-from utils import make_test_publisher_from_vallist, ValidationSubscriber
+import thingflow.filters.output
+import thingflow.filters.json
+import thingflow.filters.select
+from thingflow.base import Scheduler, InputThing, SensorEvent
+from thingflow.adapters.mqtt import MQTTReader, MQTTWriter
+from utils import make_test_output_thing_from_vallist, ValidationInputThing
 
 try:
     import paho.mqtt
@@ -39,7 +39,7 @@ import asyncio
 
 sensor_data = [1, 2, 3, 4, 5]
 
-class StopLoopAfter(DefaultSubscriber):
+class StopLoopAfter(InputThing):
     def __init__(self, stop_after, cancel_thunk):
         self.events_left = stop_after
         self.cancel_thunk = cancel_thunk
@@ -72,18 +72,18 @@ class TestCase(unittest.TestCase):
     def test_mqtt(self):
         loop = asyncio.get_event_loop()
         s = Scheduler(loop)
-        sensor = make_test_publisher_from_vallist(1, sensor_data)
+        sensor = make_test_output_thing_from_vallist(1, sensor_data)
         mqtt_writer = MQTTWriter('localhost', topics=[('bogus/bogus',0),])
-        sensor.to_json().subscribe(mqtt_writer)
+        sensor.to_json().connect(mqtt_writer)
         s.schedule_periodic(sensor, 0.5)
 
         mqtt_reader = MQTTReader("localhost", topics=[('bogus/bogus', 0),])
-        vs = ValidationSubscriber(sensor_data, self)
+        vs = ValidationInputThing(sensor_data, self)
         mqtt_reader.take(5).select(mqtt_msg_to_unicode).from_json(constructor=SensorEvent) \
-                       .output().subscribe(vs)
+                       .output().connect(vs)
         c = s.schedule_on_private_event_loop(mqtt_reader)
         stop = StopLoopAfter(5, c)
-        mqtt_reader.subscribe(stop)
+        mqtt_reader.connect(stop)
         mqtt_reader.print_downstream()
         sensor.print_downstream()
         s.run_forever()

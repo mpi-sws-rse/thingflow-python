@@ -1,5 +1,6 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
+import asyncio
 import time
 from collections import namedtuple
 
@@ -11,7 +12,7 @@ except ImportError:
 from thingflow.base import InputThing, OutputThing, EventLoopOutputThingMixin
 
 
-MQTTEvent = namedtuple('MQTTEvent', ['timestamp', 'state', 'mid', 'port', 'payload', 'qos', 'dup', 'retain' ])
+MQTTEvent = namedtuple('MQTTEvent', ['timestamp', 'state', 'mid', 'topic', 'payload', 'qos', 'dup', 'retain' ])
 
 
 import random
@@ -31,10 +32,10 @@ class MockMQTTClient(object):
             self.on_connect(self, self.userdata, None, 0)
         return 0
 
-    def subscribe(self, ports):
+    def subscribe(self, topics):
         pass
 
-    def publish(self, port, payload, qos, retain=False):
+    def publish(self, topic, payload, qos, retain=False):
         if self.on_publish:
             self.on_publish(self, self.userdata, 0)
 
@@ -55,15 +56,15 @@ class MockMQTTClient(object):
 
 class MQTTWriter(InputThing):
     """Subscribes to internal events and pushes them out to MQTT.
-    The ports parameter is a list of (port, qos) pairs.
+    The topics parameter is a list of (topic, qos) pairs.
     """
-    def __init__(self, host, port=1883, client_id="", client_username="", client_password=None, server_tls=False, server_cert=None, ports=[], mock_class=None):
+    def __init__(self, host, port=1883, client_id="", client_username="", client_password=None, server_tls=False, server_cert=None, topics=[], mock_class=None):
         self.host = host
         self.port = port
         self.client_id = client_id
         self.client_username = client_id
         self.client_password = client_password
-        self.ports = ports
+        self.topics = topics
 
         self.server_tls =  server_tls
         self.server_cert = server_cert
@@ -85,7 +86,7 @@ class MQTTWriter(InputThing):
             print(self.client.connect(self.host, self.port))
         else:
             self.client.connect(self.host, self.port) 
-            self.client.connect(self.ports)
+            self.client.subscribe(self.topics)
    
         def on_connect(client, userdata, flags, rc):
             print("Connected with result code "+str(rc))
@@ -97,13 +98,13 @@ class MQTTWriter(InputThing):
 
 
     def on_next(self, msg):
-        # publish the message to the ports
+        # publish the message to the topics
         retain = msg.retain if hasattr(msg, 'retain') else False
-        for (port, qos) in self.ports:
+        for (topic, qos) in self.topics:
             try:
-                self.client.publish(port, msg, qos, retain) 
+                self.client.publish(topic, msg, qos, retain) 
             except ValueError:
-                print("ValueError raised for port %s: msg %s" % (port, msg))
+                print("ValueError raised for topic %s: msg %s" % (topic, msg))
 
     def on_error(self, e):
         self.client.disconnect()
@@ -112,18 +113,18 @@ class MQTTWriter(InputThing):
         self.client.disconnect()
 
     def __str__(self):
-        return 'MQTTWriter(%s)' % ', '.join([port for (port,qos) in self.ports])
+        return 'MQTTWriter(%s)' % ', '.join([topic for (topic,qos) in self.topics])
         
 
 class MQTTReader(OutputThing, EventLoopOutputThingMixin):
     """An reader that creates a stream from an MQTT broker. Initialize the
-       reader with a list of ports to subscribe to. The ports parameter
-       is a list of (port, qos) pairs.
+       reader with a list of topics to subscribe to. The topics parameter
+       is a list of (topic, qos) pairs.
 
        Pre-requisites: An MQTT broker (on host:port) --- tested with mosquitto
                    The paho.mqtt python client for mqtt (pip install paho-mqtt)
     """
-    def __init__(self, host, port=1883, client_id="", client_username="", client_password=None, server_tls=False, server_cert=None, ports=[], mock_class=None):
+    def __init__(self, host, port=1883, client_id="", client_username="", client_password=None, server_tls=False, server_cert=None, topics=[], mock_class=None):
         super().__init__()
         self.stop_requested = False
 
@@ -132,7 +133,7 @@ class MQTTReader(OutputThing, EventLoopOutputThingMixin):
         self.client_id = client_id
         self.client_username = client_id
         self.client_password = client_password
-        self.ports = ports
+        self.topics = topics
 
         self.server_tls =  server_tls
         self.server_cert = server_cert
@@ -148,7 +149,7 @@ class MQTTReader(OutputThing, EventLoopOutputThingMixin):
         self._connect()
  
         def on_message(client, userdata, msg):
-            m =  MQTTEvent(msg.timestamp, msg.state, msg.mid, msg.port, msg.payload, msg.qos, msg.dup, msg.retain)
+            m =  MQTTEvent(msg.timestamp, msg.state, msg.mid, msg.topic, msg.payload, msg.qos, msg.dup, msg.retain)
             self._dispatch_next(m)
         self.client.on_message = on_message
    
@@ -165,7 +166,7 @@ class MQTTReader(OutputThing, EventLoopOutputThingMixin):
 
             # Subscribing in on_connect() means that if we lose the connection and
             # reconnect then subscriptions will be renewed.
-            client.connect(self.ports)
+            client.subscribe(self.topics)
         self.client.on_connect = on_connect
 
         
@@ -186,4 +187,4 @@ class MQTTReader(OutputThing, EventLoopOutputThingMixin):
         print("requesting stop")
 
     def __str__(self):
-        return 'MQTTReader(%s)' % ', '.join([port for (port,qos) in self.ports])
+        return 'MQTTReader(%s)' % ', '.join([topic for (topic,qos) in self.topics])

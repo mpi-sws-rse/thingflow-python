@@ -1,9 +1,11 @@
-import json
+"""
+NOTE: This is example code which has not been tested.
+TODO: Write automated tests for this code.
+"""
 import datetime
 from influxdb import InfluxDBClient, SeriesHelper
 
-from collections import namedtuple
-from antevents.base import Publisher, DefaultSubscriber
+from thingflow.base import OutputThing, InputThing, FatalError
 
 # class BulkUploader(SeriesHelper):
 #     def __new__(self, client, msg_format, bulk_size=10):
@@ -26,10 +28,10 @@ from antevents.base import Publisher, DefaultSubscriber
 #         # autocommit must be set to True when using bulk_size
 #         autocommit = True
 
-class InfluxDBWriter(DefaultSubscriber):
+class InfluxDBWriter(InputThing):
     """Subscribes to events and writes out to an InfluxDB database"""
 
-    def __init__(self, msg_format, generate_timestamp=True, host="127.0.0.1", port=8086, database="antevents", 
+    def __init__(self, msg_format, generate_timestamp=True, host="127.0.0.1", port=8086, database="thingflow", 
                  username="root", password="root", 
                  ssl=False, verify_ssl=False, timeout=None, 
                  use_udp=False, udp_port=4444, proxies=None,
@@ -121,8 +123,8 @@ class InfluxDBWriter(DefaultSubscriber):
     def __str__(self):
         return 'InfluxDB Client(msg=%s)' % self.msg_format.__str__()
 
-class InfluxDBReader(Publisher):
-    def __init__(self, query, host="127.0.0.1", port=8086, database="antevents", 
+class InfluxDBReader(OutputThing):
+    def __init__(self, query, host="127.0.0.1", port=8086, database="thingflow", 
                  username="root", password="root", 
                  ssl=False, verify_ssl=False, timeout=None, 
                  use_udp=False, udp_port=4444, proxies=None,

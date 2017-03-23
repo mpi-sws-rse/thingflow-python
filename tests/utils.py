@@ -6,6 +6,9 @@ import time
 import unittest
 import random
 random.seed()
+import sys
+import traceback
+import pdb
 
 from thingflow.base import IterableAsOutputThing, InputThing, FatalError,\
      SensorEvent
@@ -188,11 +191,9 @@ class ValidateAndStopInputThing(ValidationInputThing):
 class CaptureInputThing(InputThing):
     """Capture the sequence of events in a list for later use.
     """
-    def __init__(self, expecting_error=False):
-        self.expecting_error = expecting_error
+    def __init__(self):
         self.events = []
         self.completed = False
-        self.errored = False
 
     def on_next(self, x):
         self.events.append(x)
@@ -201,7 +202,15 @@ class CaptureInputThing(InputThing):
         self.completed = True
 
     def on_error(self, e):
-        if not self.expecting_error:
-            raise FatalError("Should not get on_error, got on_error(%s)" % e)
-        else:
-            self.errored = True
+        raise FatalError("Should not get on_error, got on_error(%s)" % e)
+
+
+def trace_on_error(f):
+    def decorator(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            info = sys.exc_info()
+            traceback.print_exception(*info)
+            pdb.post_mortem(info[2])
+    return decorator

@@ -1,20 +1,19 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-"""This needs to be updated to match the latest base.py!
+"""TODO: This needs to be updated to match the latest base.py!
 """
 import asyncio
-import logging
 # log = logging.getLogger(__name__)
 # formatter = logging.Formatter("%(asctime)s %(levelname)s " +
 #                               "[%(module)s:%(lineno)d] %(message)s")
 # log.setLevel(logging.DEBUG)
 
-from antevents.base import DefaultSubscriber
+from thingflow.base import InputThing
 
 clients = {}  # task -> (reader, writer)
 
 
-class TcpStreamSubscriber(DefaultSubscriber):
+class TcpStreamInputThing(InputThing):
     
     def __init__(self, loop, host=None, port=2991):
         self.server = None
@@ -30,7 +29,7 @@ class TcpStreamSubscriber(DefaultSubscriber):
                                          host, port, loop=loop))
 
     def __str__(self):
-        return "TcpStreamSubscriber[{0}, {1}]".format(self.host, self.port)
+        return "TcpStreamInputThing[{0}, {1}]".format(self.host, self.port)
 
     def _accept_client(self, client_reader, client_writer):
         """
@@ -70,7 +69,7 @@ class TcpStreamSubscriber(DefaultSubscriber):
     def on_error(self, e):
         # close tcp connection
         self.stop()
-        log.info(e)
+        print(e)
 
     def on_completed(self):
         # close tcp connection 

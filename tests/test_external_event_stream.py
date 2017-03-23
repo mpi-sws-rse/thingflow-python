@@ -29,7 +29,7 @@ class TestExternalEventStream(unittest.TestCase):
         events.
         """
         s = Scheduler(asyncio.get_event_loop())
-        m = MQTTReader("localhost", ports=[('bogus/bogus', 0),],
+        m = MQTTReader("localhost", topics=[('bogus/bogus', 0),],
                        mock_class=MockMQTTClient)
         m.output()
         c = s.schedule_on_private_event_loop(m)
