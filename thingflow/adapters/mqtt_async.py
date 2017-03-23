@@ -10,11 +10,11 @@ import json
 import asyncio
 from collections import deque
 
-from antevents.base import DefaultSubscriber, FatalError, Publisher, \
-                           filtermethod, EventLoopPublisherMixin
+from thingflow.base import InputThing, FatalError, OutputThing, \
+                           filtermethod, EventLoopOutputThingMixin
 
 
-class QueueWriter(Publisher, DefaultSubscriber):
+class QueueWriter(OutputThing, InputThing):
     def __init__(self, previous_in_chain, uri, topic, scheduler):
         super().__init__()
         self.uri = uri
@@ -26,7 +26,7 @@ class QueueWriter(Publisher, DefaultSubscriber):
         self.pending_error = None
         self.request_queue = deque()
         self.client = hbmqtt.client.MQTTClient(loop=scheduler.event_loop)
-        self.dispose = previous_in_chain.subscribe(self)
+        self.dispose = previous_in_chain.connect(self)
 
     def has_pending_requests(self):
         """Return True if there are pending requests. Useful for tests
@@ -124,11 +124,11 @@ class QueueWriter(Publisher, DefaultSubscriber):
             #print("on_completed: queued disconnect")
 
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def mqtt_async_send(this, uri, topic, scheduler):
     """
     Filter method to send a message on the specified uri and topic. It is
-    added to the publisher.
+    added to the output_thing.
     """
     return QueueWriter(this, uri, topic, scheduler)
 
@@ -136,7 +136,7 @@ def mqtt_async_send(this, uri, topic, scheduler):
 DELIVER_TIMEOUT=2 # seconds
 
 
-class QueueReader(Publisher, EventLoopPublisherMixin):
+class QueueReader(OutputThing, EventLoopOutputThingMixin):
     """Subscribe to a topic, wait for incoming messages,
     and push them downstream.
     """

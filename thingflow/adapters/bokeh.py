@@ -21,24 +21,21 @@ from collections import namedtuple
 # A 'sensor' is just a generator of sensor events.
 SensorEvent = namedtuple('SensorEvent', ['sensor_id', 'ts', 'val'])
 
+TODO: Write automated tests
 """
-import datetime
 import logging
 import functools
 from math import pi
 
 import threading, queue
 
-from bokeh.charts import TimeSeries, show, output_file, output_server
 from bokeh.plotting import figure, curdoc
 from bokeh.layouts import column # to show two or more plots arranged in a column
-import numpy as np
 from bokeh.models import ColumnDataSource
-from bokeh.models import DatetimeTickFormatter
 
 from bokeh.client import push_session
 
-from antevents.base import Filter, filtermethod
+from thingflow.base import Filter
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +52,6 @@ tooltips=[
 def bokeh_timeseries_mapper(events):
     # a row is 'timestamp', 'datetime', 'sensor_id', 'value'
     ts = [ ]
-    dttm = [ ]
     value = [ ]
     for r in events:
         t = float(r.ts)
@@ -129,6 +125,7 @@ class BokehPlot(object):
 
 class BokehPlotManager(Filter):
     def __init__(self):
+        super().__init__()
         self.plotters = { }
         self.open_for_registration = True
         self.started = False
@@ -214,6 +211,7 @@ class BokehOutputWorker(threading.Thread):
 
 class BokehStreamer(Filter):
     def __init__(self, initial_csv, io_loop=None):
+        super().__init__()
         self.q = queue.Queue() 
         self.bokeh_worker = BokehOutputWorker("Sensor", self.q)
         self.bokeh_worker.start()
@@ -235,6 +233,6 @@ class BokehStreamer(Filter):
 def bokeh_output_streaming(csv):
     """Write an event stream to a Bokeh visualizer
     """    
-    b = BokehStreamer(csv)
+    BokehStreamer(csv)
 
 

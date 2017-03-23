@@ -10,13 +10,13 @@ import sys
 import asyncio
 import string
 from random import choice, seed
-from antevents.base import Scheduler, SensorPub, SensorEvent
-import antevents.linq.output
-import antevents.linq.combinators
-import antevents.linq.select
-from antevents.adapters.mqtt_async import QueueWriter, QueueReader
-from antevents.linq.transducer import PeriodicMedianTransducer
-from utils import ValueListSensor, ValidateAndStopSubscriber
+from thingflow.base import Scheduler, SensorAsOutputThing, SensorEvent
+import thingflow.filters.output
+import thingflow.filters.combinators
+import thingflow.filters.select
+from thingflow.adapters.mqtt_async import QueueWriter, QueueReader
+from thingflow.filters.transducer import PeriodicMedianTransducer
+from utils import ValueListSensor, ValidateAndStopInputThing
 
 seed()
 
@@ -75,7 +75,7 @@ class TestCase(unittest.TestCase):
     def test_client_only(self):
         SENSOR_ID='sensor-1'
         TOPIC=get_topic_name(self)
-        sensor = SensorPub(ValueListSensor(SENSOR_ID, VALUES))
+        sensor = SensorAsOutputThing(ValueListSensor(SENSOR_ID, VALUES))
         td = sensor.transduce(PeriodicMedianTransducer(period=3))
         qw = QueueWriter(td, URL, TOPIC, self.sched)
         qw.output()
@@ -88,15 +88,15 @@ class TestCase(unittest.TestCase):
     def send_and_recv_body(self, sleep_timeout):
         SENSOR_ID='sensor-1'
         TOPIC=get_topic_name(self)
-        sensor = SensorPub(ValueListSensor(SENSOR_ID, VALUES))
+        sensor = SensorAsOutputThing(ValueListSensor(SENSOR_ID, VALUES))
         td = sensor.transduce(PeriodicMedianTransducer(period=3))
         qw = QueueWriter(td, URL, TOPIC, self.sched)
         qw.output()
         qr = QueueReader(URL, TOPIC, self.sched, timeout=sleep_timeout)
         self.sched.schedule_periodic(sensor, 0.5)
         stop_qr = self.sched.schedule_on_main_event_loop(qr)
-        vs = ValidateAndStopSubscriber(EXPECTED, self, stop_qr)
-        qr.select(msg_to_event).subscribe(vs)
+        vs = ValidateAndStopInputThing(EXPECTED, self, stop_qr)
+        qr.select(msg_to_event).connect(vs)
         self.sched.run_forever()
         self.assertFalse(qw.has_pending_requests(),
                          "QueueWriter has pending requests: %s" % qw.dump_state())

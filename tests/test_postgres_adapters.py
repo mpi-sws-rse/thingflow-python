@@ -22,18 +22,18 @@ DEBUG_MODE = False
 import asyncio
 import unittest
 
-from utils import ValueListSensor, SensorEventValidationSubscriber
-from antevents.base import Scheduler, DefaultSubscriber
+from utils import ValueListSensor, SensorEventValidationInputThing
+from thingflow.base import Scheduler, InputThing
 if PREREQS_AVAILABLE:
-    from antevents.adapters.postgres import PostgresWriter, SensorEventMapping,\
+    from thingflow.adapters.postgres import PostgresWriter, SensorEventMapping,\
         create_sensor_table, delete_sensor_table, PostgresReader
-from antevents.linq.output import output
-from antevents.linq.combinators import parallel
+from thingflow.filters.output import output
+from thingflow.filters.combinators import parallel
 
 
 sensor_values = [1, 2, 3, 4, 5]
 
-class CaptureSubscriber(DefaultSubscriber):
+class CaptureInputThing(InputThing):
     def __init__(self):
         self.seq = []
 
@@ -68,15 +68,15 @@ class TestCase(unittest.TestCase):
         sensor = ValueListSensor(1, sensor_values)
         scheduler = Scheduler(asyncio.get_event_loop())
         pg = PostgresWriter(scheduler, self.connect_string, self.mapping)
-        capture = CaptureSubscriber()
+        capture = CaptureInputThing()
         scheduler.schedule_sensor(sensor, 0.5,
                                   parallel(pg, output, capture))
         scheduler.run_forever()
         print("finish writing to the database")
         row_source = PostgresReader(self.connect_string, self.mapping)
         row_source.output()
-        validate = SensorEventValidationSubscriber(capture.seq, self)
-        row_source.subscribe(validate)
+        validate = SensorEventValidationInputThing(capture.seq, self)
+        row_source.connect(validate)
         scheduler.schedule_recurring(row_source)
         scheduler.run_forever()
         self.assertTrue(validate.completed)
