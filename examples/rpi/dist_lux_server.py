@@ -1,8 +1,9 @@
 """Demo of lux sensor and led from raspberry pi
 Distributed version - server side: read from an mqtt message queue
-and save the datainto a postgres database.
+and save the datainto a postgres database. We assume the database has
+a schema "iot".
 
-Here is the sql to setup the database table:
+Here is the sql to setup the database table (via psql):
 drop table if exists events;
 drop sequence if exists events_seq;
 create sequence events_seq;
@@ -23,7 +24,7 @@ connect_string="dbname=iot user=%s" % getpass.getuser()
 mapping = SensorEventMapping('events')
 
 def setup(host):
-    mqtt = MQTTReader(host, ports=[('bogus/bogus', 2)])
+    mqtt = MQTTReader(host, topics=[('bogus/bogus', 2)])
     decoded =  mqtt.select(lambda m:(m.payload).decode("utf-8")) \
                    .from_json(constructor=SensorEvent)
     scheduler = Scheduler(asyncio.get_event_loop())

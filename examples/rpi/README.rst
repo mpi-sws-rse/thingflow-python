@@ -2,7 +2,7 @@
 Raspberry Pi Light Sensor Example
 =================================
 
-This directory contains two example AntEvents applications that read a tsl2591
+This directory contains two example ThingFlow applications that read a tsl2591
 Lux sensor connected to a Raspberry Pi running Raspbian Linux. To run these
 examples, you need to install several packages, as follows::
 
