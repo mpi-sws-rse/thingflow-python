@@ -20,7 +20,7 @@ def setup(broker, threshold):
     actions = lux.map(lambda event: event.val > threshold)
     actions.connect(led)
     actions.connect(lambda v: print('ON' if v else 'OFF'))
-    lux.to_json().connect(MQTTWriter(broker, ports=[('bogus/bogus', 0)]))
+    lux.to_json().connect(MQTTWriter(broker, topics=[('bogus/bogus', 0)]))
     lux.print_downstream()
     return (lux, led)
     
