@@ -12,22 +12,22 @@ import sys
 import asyncio
 import getpass
 
-from antevents.base import Scheduler, SensorEvent
-from antevents.adapters.mqtt import MQTTReader
-from antevents.adapters.postgres import PostgresWriter, SensorEventMapping
-import antevents.linq.select
-import antevents.linq.json
+from thingflow.base import Scheduler, SensorEvent
+from thingflow.adapters.mqtt import MQTTReader
+from thingflow.adapters.postgres import PostgresWriter, SensorEventMapping
+import thingflow.filters.select
+import thingflow.filters.json
 
 connect_string="dbname=iot user=%s" % getpass.getuser()
 
 mapping = SensorEventMapping('events')
 
 def setup(host):
-    mqtt = MQTTReader(host, topics=[('bogus/bogus', 2)])
+    mqtt = MQTTReader(host, ports=[('bogus/bogus', 2)])
     decoded =  mqtt.select(lambda m:(m.payload).decode("utf-8")) \
                    .from_json(constructor=SensorEvent)
     scheduler = Scheduler(asyncio.get_event_loop())
-    decoded.subscribe(PostgresWriter(scheduler, connect_string, mapping))
+    decoded.connect(PostgresWriter(scheduler, connect_string, mapping))
     decoded.output()
     mqtt.print_downstream()
     return mqtt, scheduler

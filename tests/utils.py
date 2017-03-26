@@ -11,7 +11,7 @@ import traceback
 import pdb
 
 from thingflow.base import IterableAsOutputThing, InputThing, FatalError,\
-     SensorEvent
+     SensorEvent, Filter
 
 class RandomSensor:
     def __init__(self, sensor_id, mean=100.0, stddev=20.0, stop_after_events=None):
@@ -209,8 +209,29 @@ class CaptureInputThing(InputThing):
         else:
             raise FatalError("Should not get on_error, got on_error(%s)" % e)
 
+class StopAfterN(Filter):
+    """Filter to call a stop function after N events.
+    Usually, the stop function is the deschedule function for an upstream sensor.
+    """
+    def __init__(self, previous_in_chain, stop_fn, N=5):
+        super().__init__(previous_in_chain)
+        self.stop_fn = stop_fn
+        self.N = N
+        assert N>0
+        self.count = 0
+        
+    def on_next(self, x):
+        self._dispatch_next(x)
+        self.count += 1
+        if self.count==self.N:
+            print("stopping after %d events" % self.N)
+            self.stop_fn()
+
 
 def trace_on_error(f):
+    """Decorator helpful when debugging. Will put the decorated function/method
+    into the debugger when an exception is thrown
+    """
     def decorator(*args, **kwargs):
         try:
             return f(*args, **kwargs)

@@ -5,22 +5,22 @@ import sys
 import asyncio
 import argparse
 
-from antevents.base import Scheduler, SensorPub
-from antevents.sensors.rpi.lux_sensor import LuxSensor
-from antevents.adapters.rpi.gpio import GpioPinOut
-from antevents.adapters.mqtt import MQTTWriter
-import antevents.linq.select
-import antevents.linq.json
+from thingflow.base import Scheduler, SensorAsOutputThing
+from thingflow.sensors.rpi.lux_sensor import LuxSensor
+from thingflow.adapters.rpi.gpio import GpioPinOut
+from thingflow.adapters.mqtt import MQTTWriter
+import thingflow.filters.select
+import thingflow.filters.json
 
 
 def setup(broker, threshold):
-    lux = SensorPub(LuxSensor())
-    lux.subscribe(print)
+    lux = SensorAsOutputThing(LuxSensor())
+    lux.connect(print)
     led = GpioPinOut()
     actions = lux.map(lambda event: event.val > threshold)
-    actions.subscribe(led)
-    actions.subscribe(lambda v: print('ON' if v else 'OFF'))
-    lux.to_json().subscribe(MQTTWriter(broker, topics=[('bogus/bogus', 0)]))
+    actions.connect(led)
+    actions.connect(lambda v: print('ON' if v else 'OFF'))
+    lux.to_json().connect(MQTTWriter(broker, ports=[('bogus/bogus', 0)]))
     lux.print_downstream()
     return (lux, led)
     

@@ -4,23 +4,23 @@ import sys
 import asyncio
 import os.path
 
-from antevents.base import Scheduler, SensorPub
-from antevents.sensors.rpi.lux_sensor import LuxSensor
-from antevents.adapters.rpi.gpio import GpioPinOut
-import antevents.adapters.csv
-import antevents.linq.select
+from thingflow.base import Scheduler, SensorAsOutputThing
+from thingflow.sensors.rpi.lux_sensor import LuxSensor
+from thingflow.adapters.rpi.gpio import GpioPinOut
+import thingflow.adapters.csv
+import thingflow.filters.select
 
     
             
 
 def setup(threshold=25):
-    lux = SensorPub(LuxSensor())
-    lux.subscribe(print)
+    lux = SensorAsOutputThing(LuxSensor())
+    lux.connect(print)
     lux.csv_writer(os.path.expanduser('~/lux.csv'))
     led = GpioPinOut()
     actions = lux.map(lambda event: event.val > threshold)
-    actions.subscribe(led)
-    actions.subscribe(lambda v: print('ON' if v else 'OFF'))
+    actions.connect(led)
+    actions.connect(lambda v: print('ON' if v else 'OFF'))
     lux.print_downstream()
     return (lux, led)
     

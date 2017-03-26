@@ -34,7 +34,7 @@ class TestPandas(unittest.TestCase):
         w =thingflow.adapters.pandas.PandasSeriesWriter()
         p.connect(w)
         sch = Scheduler(asyncio.get_event_loop())
-        sch.schedule_periodic(p, 0.25)
+        sch.schedule_recurring(p)
         sch.run_forever()
         self.assertTrue(w.result is not None, "Result of pandas never set")
         # now we verify each element
