@@ -1,8 +1,8 @@
-"""Implementation ofa solar water heater example (with dummy sensors).
+"""Implementation of a solar water heater example (with dummy sensors).
 
 In this scenario, we have a solar water heater that includes a water temperature
 sensor on the output pipe of the heater. There is also an actuator which
-controls a bypass value: if the actuator is ON, the hot water is redirected to a
+controls a bypass valve: if the actuator is ON, the hot water is redirected to a
 Spa, instead of going to the house. The spa is acting as a heat sink, taking
 up the extra heat.
 
@@ -10,14 +10,14 @@ The Controller class below implements a state machine which looks at the data
 from the temperature sensor and turns on the bypass valve when the heated water
 is too hot. To avoid oscillations, we use the following logic:
   1. If the running average of the temperature exceeds T_high, turn on the bypass
-  2. When the running average dips below T_low (where T_low<T_high), then turn off the
-     bypass.
+  2. When the running average dips below T_low (where T_low<T_high), then turn
+     off the bypass.
 
 We also want to aways output an initial value for the valve upon the very first
 sensor reading. If the first reading is below T_low, the valve should be off. For
 subsequent sensor events, we only output an actuator value if it has changed.
 
-When designing the graph for this application, we need to ensure that we
+When designing the data flow for this application, we need to ensure that we
 have input determinism: for a given input sequence, only one output sequence
 on the actuator is possible. This can be achieved by using the dispatch()
 filter, which ensures that only one event is input to the controller state
@@ -42,12 +42,12 @@ import time
 import random
 random.seed()
 
-import antevents.linq.transducer
-import antevents.linq.where
-import antevents.linq.first
-import antevents.linq.dispatch
-from antevents.base import Publisher, Scheduler, SensorEvent, SensorPub,\
-                           DefaultSubscriber, FatalError
+import thingflow.filters.transducer
+import thingflow.filters.where
+import thingflow.filters.first
+import thingflow.filters.dispatch
+from thingflow.base import OutputThing, Scheduler, SensorEvent, SensorAsOutputThing,\
+                           InputThing, FatalError
 
 # constants
 T_high = 110 # too hot threshold is this in Farenheit
@@ -77,7 +77,7 @@ class DummyTempSensor:
         return 'DummyTempSensor(%s)' % self.sensor_id
 
 
-class RunningAvg(antevents.linq.transducer.Transducer):
+class RunningAvg(thingflow.filters.transducer.Transducer):
     """Transducer that returns a running average of values
     of over the history interval. Note that the interval is a time period,
     not a number of samples.
@@ -105,7 +105,7 @@ class RunningAvg(antevents.linq.transducer.Transducer):
         return 'RunningAvg(%s)' % self.history_interval
 
 
-class Controller(Publisher):
+class Controller(OutputThing):
     """Input sensor events and output actuator settings.
     """
     def __init__(self):
@@ -158,7 +158,7 @@ class Controller(Publisher):
     def __repr__(self):
         return 'Controller'
 
-class BypassValveActuator(DefaultSubscriber):
+class BypassValveActuator(InputThing):
     def on_next(self, x):
         if x.val=='ON':
             print("Turning ON!")
@@ -182,7 +182,7 @@ for i in range(len(input_sequence)):
 
 
 def run_example():
-    sensor = SensorPub(DummyTempSensor('temp-1', input_sequence))
+    sensor = SensorAsOutputThing(DummyTempSensor('temp-1', input_sequence))
     sensor.output() # let us see the raw values
     dispatcher = sensor.transduce(RunningAvg(4))\
                        .passthrough(lambda evt:
@@ -191,10 +191,10 @@ def run_example():
                        .dispatch([(lambda v: v[2]>=T_high, 't_high'),
                                   (lambda v: v[2]<=T_low, 't_low')])
     controller = Controller()
-    dispatcher.subscribe(controller, topic_mapping=('t_high', 't_high'))
-    dispatcher.subscribe(controller, topic_mapping=('t_low', 't_low'))
-    dispatcher.subscribe(controller, topic_mapping=('default', 'between'))
-    controller.subscribe(BypassValveActuator())
+    dispatcher.connect(controller, port_mapping=('t_high', 't_high'))
+    dispatcher.connect(controller, port_mapping=('t_low', 't_low'))
+    dispatcher.connect(controller, port_mapping=('default', 'between'))
+    controller.connect(BypassValveActuator())
     sensor.print_downstream()
     scheduler = Scheduler(asyncio.get_event_loop())
     scheduler.schedule_periodic(sensor, 0.5)

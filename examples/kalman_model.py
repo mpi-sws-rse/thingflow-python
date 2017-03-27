@@ -6,11 +6,11 @@ from sklearn import linear_model
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 
-from antevents.base import Publisher, DefaultSubscriber, from_iterable, Scheduler
+from thingflow.base import OutputThing, InputThing, from_iterable, Scheduler
 
-class SGDLinearRegressionModel(Publisher, DefaultSubscriber):
+class SGDLinearRegressionModel(OutputThing, InputThing):
     def __init__(self):
-        Publisher.__init__(self, topics=['train', 'observe', 'predict'])
+        OutputThing.__init__(self, ports=['train', 'observe', 'predict'])
         self.clf = linear_model.SGDRegressor()
 
     def on_train_next(self, x):
@@ -32,15 +32,15 @@ class SGDLinearRegressionModel(Publisher, DefaultSubscriber):
         print("On observe next called")
         xx = np.asarray(x)
         p = self.clf.predict(xx)
-        self._dispatch_next(p, topic='predict')
+        self._dispatch_next(p, port='predict')
     def on_observe_error(self, x):
         self.on_error(x)
     def on_observe_completed(self):
         self.on_completed()
 
-class FilterModel(Publisher, DefaultSubscriber):
+class FilterModel(OutputThing, InputThing):
     def __init__(self, filter):
-        Publisher.__init__(self, topics=['observe', 'predict'])
+        OutputThing.__init__(self, ports=['observe', 'predict'])
         self.filter = filter
 
     def on_observe_next(self, measurement):
@@ -48,7 +48,7 @@ class FilterModel(Publisher, DefaultSubscriber):
         # training input: train the model
         self.filter.predict()
         self.filter.update(measurement)
-        self._dispatch_next(self.filter.x, topic='predict')
+        self._dispatch_next(self.filter.x, port='predict')
 
     def on_observe_error(self, x):
         print("On observe error called")
@@ -87,12 +87,12 @@ class KalmanFilterModel(FilterModel):
 def main_linear():
     obs_stream = from_iterable(iter([ [ [ [1.0, 1.0], [2.0, 2.0]], [1.0, 2.0] ], [  [ [6.0, 6.0], [9.0, 9.0]], [6.0, 9.0] ]  ]))
     pred_stream = from_iterable(iter([ [3.0, 3.0] ]))
-    model = LinearRegressionModel()
-    obs_stream.subscribe(model, topic_mapping=('default', 'train'))
-    obs_stream.subscribe(print)
+    model = SGDLinearRegressionModel()
+    obs_stream.connect(model, port_mapping=('default', 'train'))
+    obs_stream.connect(print)
 
-    pred_stream.subscribe(model, topic_mapping=('default', 'observe'))
-    model.subscribe(print, topic_mapping=('predict', 'default'))
+    pred_stream.connect(model, port_mapping=('default', 'observe'))
+    model.connect(print, port_mapping=('predict', 'default'))
     scheduler = Scheduler(asyncio.get_event_loop())
     scheduler.schedule_periodic(obs_stream, 1)
     scheduler.schedule_periodic(pred_stream, 5)
@@ -116,8 +116,8 @@ def main_kalman():
                               F, B, Q, H, R)
     measurement_stream = from_iterable(iter([ [ 1.0 ], [0.0] ]))
     # measurement_stream = from_iterable(iter([ np.array([ [1.0, 1.0] ]) ]))
-    measurement_stream.subscribe(model, topic_mapping=('default', 'observe'))
-    model.subscribe(print, topic_mapping=('predict', 'default'))
+    measurement_stream.connect(model, port_mapping=('default', 'observe'))
+    model.connect(print, port_mapping=('predict', 'default'))
 
     scheduler = Scheduler(asyncio.get_event_loop())
     scheduler.schedule_periodic(measurement_stream, 1)

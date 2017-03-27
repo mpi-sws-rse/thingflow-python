@@ -1,28 +1,39 @@
 """
-This is the example from publishers.rst. It reads a CSV-formatted spreadsheet
-file and generates an event from each line. We call publishers that pull
+This is the example from output_things.rst. It reads a CSV-formatted spreadsheet
+file and generates an event from each line. We call output_things that pull
 data from an external source "readers".
 
+To run this script::
+
+    python simple_csv_reader.py CSV_FILE
+
+For your csv file, here is some sample data:
+ts,id,value
+1490576783,sensor-1,1
+1490576784,sensor-1,1
+1490576785,sensor-1,3
+1490576786,sensor-1,4
+
 There is a more flexible csv reader class defined in
-antevents.adapters.csv.
+thingflow.adapters.csv.
 """
 
 import csv
 import sys
 import asyncio
-from antevents.base import Publisher, DirectPublisherMixin, Scheduler,\
+from thingflow.base import OutputThing, DirectOutputThingMixin, Scheduler,\
                            SensorEvent, FatalError
-import antevents.linq.output # load the output method on the publisher
+import thingflow.filters.output # load the output method on the output_thing
 
-class SimpleCsvReader(Publisher, DirectPublisherMixin):
+class SimpleCsvReader(OutputThing, DirectOutputThingMixin):
     """A simple csv file reader. We assume that each row contains
     a timestamp, a sensor id, and a value.
 
     We could save some work here by subclassing from
-    antevents.generic.DirectReader.
+    thingflow.generic.DirectReader.
     """
     def __init__(self, filename, has_header_row=True):
-        super().__init__() # Make sure the publisher class is initialized
+        super().__init__() # Make sure the output_thing class is initialized
         self.filename = filename
         self.file = open(filename, 'r', newline='')
         self.reader = csv.reader(self.file)

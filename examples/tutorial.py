@@ -1,5 +1,5 @@
 """
-This is an example antevents program that is described in tutorial.rst.
+This is an example thingflow program that is described in tutorial.rst.
 """
 
 # First, let's define a sensor that generates a random number each time
@@ -7,8 +7,7 @@ This is an example antevents program that is described in tutorial.rst.
 
 import random
 random.seed()
-import time
-from antevents.base import SensorPub
+from thingflow.base import SensorAsOutputThing
 
 
 
@@ -38,13 +37,13 @@ class RandomSensor:
 # Instantiate our sensor
 MEAN = 100
 STDDEV = 10
-sensor = SensorPub(RandomSensor(1, MEAN, STDDEV, stop_after=5))
+sensor = SensorAsOutputThing(RandomSensor(1, MEAN, STDDEV, stop_after=5))
 
 
 # Now, we will define a pretend LED as a subscriber. Each time is it passed
 # True, it will print 'On'. Each time it is passed False, it will print 'Off'.
-from antevents.base import DefaultSubscriber
-class LED(DefaultSubscriber):
+from thingflow.base import InputThing
+class LED(InputThing):
     def on_next(self, x):
         if x:
             print("On")
@@ -67,20 +66,20 @@ led = LED()
 # Now, build a pipeline to sample events returned from the sensor,
 # convert to a boolean based on whether the value is greater than
 # the mean, and output to the LED.
-import antevents.linq.select
-sensor.select(lambda evt: evt.val > MEAN).subscribe(led)
+import thingflow.filters.select
+sensor.select(lambda evt: evt.val > MEAN).connect(led)
 
 # If you want to see the raw value of each sensor, just add the output() element
-import antevents.linq.output
+import thingflow.filters.output
 sensor.output()
 
-# Call a debug method on the base publisher class to see the element tree rooted
+# Call a debug method on the base output_thing class to see the element tree rooted
 # at sensor.
 sensor.print_downstream()
 
 # Now, we need to schedule the sensor to be sampled
 import asyncio
-from antevents.base import Scheduler
+from thingflow.base import Scheduler
 scheduler = Scheduler(asyncio.get_event_loop())
 scheduler.schedule_periodic(sensor, 1.0) # sample once a second
 scheduler.run_forever() # run until all sensors complete

@@ -6,11 +6,11 @@ import asyncio
 import random
 random.seed()
 
-from antevents.base import DefaultSubscriber, Scheduler
-from antevents.linq.output import output
-from antevents.linq.select import map
-from antevents.adapters.csv import csv_writer
-from antevents.linq.combinators import passthrough
+from thingflow.base import InputThing, Scheduler
+from thingflow.filters.output import output
+from thingflow.filters.select import map
+from thingflow.adapters.csv import csv_writer
+from thingflow.filters.combinators import passthrough
 
 class DummyLuxSensor:
     def __init__(self, sensor_id, mean=300, stddev=100, stop_after=5):
@@ -34,7 +34,7 @@ class DummyLuxSensor:
         return "DummyLuxSensor(%s, %s, %s)" % \
             (self.sensor_id, self.mean, self.stddev)
 
-class DummyLed(DefaultSubscriber):
+class DummyLed(InputThing):
     def on_next(seelf, x):
         if x:
             print("LED ON")
