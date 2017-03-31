@@ -1,5 +1,5 @@
 
-# antevents for micropython
+# thingflow for micropython
 
 from ucollections import namedtuple
 import utime
@@ -12,86 +12,86 @@ class ExcInDispatch(FatalError):
     pass
 
 
-_Subscription = namedtuple('_Subscription', ['on_next', 'on_completed', 'on_error'])
+_Connection = namedtuple('_Connection', ['on_next', 'on_completed', 'on_error'])
 
-# Base class for event generators (publishers).
-class Publisher:
-    __slots__ = ('__subscribers__',)
-    def __init__(self, topics=None):
-        self.__subscribers__ = {}
-        if topics==None:
-            topics = ['default']
-        for topic in topics:
-            self.__subscribers__[topic] = []
+# Base class for event generators (output_things).
+class OutputThing:
+    __slots__ = ('__connections__',)
+    def __init__(self, ports=None):
+        self.__connections__ = {}
+        if ports==None:
+            ports = ['default']
+        for port in ports:
+            self.__connections__[port] = []
 
-    def subscribe(self, subscriber, topic_map=None):
-        if topic_map==None:
-            pub_topic = 'default'
-            sub_topic = 'default'
+    def connect(self, input_thing, port_map=None):
+        if port_map==None:
+            out_port = 'default'
+            in_port = 'default'
         else:
-            (pub_topic, sub_topic) = topic_map
-        if sub_topic=='default':
+            (out_port, in_port) = port_map
+        if in_port=='default':
             dispatchnames = ('on_next', 'on_completed', 'on_error')
         else:
-            dispatchnames = ('on_%s_next' % sub_topic,
-                             'on_%s_completd' % sub_topic,
-                             'on_%s_error' % sub_topic)
-        functions = [getattr(subscriber, m) for m in dispatchnames]
-        subscription = _Subscription(on_next=functions[0],
-                                     on_completed=functions[1],
-                                     on_error=functions[2])
-        new_subscribers = self.__subscribers__[pub_topic].copy()
-        new_subscribers.append(subscription)
-        self.__subscribers__[pub_topic] = new_subscribers
+            dispatchnames = ('on_%s_next' % in_port,
+                             'on_%s_completd' % in_port,
+                             'on_%s_error' % in_port)
+        functions = [getattr(input_thing, m) for m in dispatchnames]
+        connection = _Connection(on_next=functions[0],
+                                 on_completed=functions[1],
+                                 on_error=functions[2])
+        new_connections = self.__connections__[out_port].copy()
+        new_connections.append(connection)
+        self.__connections__[out_port] = new_connections
         def dispose():
-            new_subscribers = self.__subscribers__[pub_topic].copy()
-            new_subscribers.remove(subscription)
-            self.__subscribers__[pub_topic] = new_subscribers
+            new_connections = self.__connections__[out_port].copy()
+            new_connections.remove(connection)
+            self.__connections__[out_port] = new_connections
         return dispose
 
-    def _dispatch_next(self, x, topic=None):
-        subscribers = self.__subscribers__[topic if topic is not None
+    def _dispatch_next(self, x, port=None):
+        connections = self.__connections__[port if port is not None
                                            else 'default']
         try:
-            for s in subscribers:
+            for s in connections:
                 s.on_next(x)
         except FatalError:
             raise
         except Exception as e:
             raise ExcInDispatch(e)
 
-    def _dispatch_completed(self, topic=None):
-        if topic==None:
-            topic = 'default'
-        subscribers = self.__subscribers__[topic]
+    def _dispatch_completed(self, port=None):
+        if port==None:
+            port = 'default'
+        connections = self.__connections__[port]
         try:
-            for s in subscribers:
+            for s in connections:
                 s.on_completed()
         except FatalError:
             raise
         except Exception as e:
             raise ExcInDispatch(e)
-        del self.__subscribers__[topic]
+        del self.__connections__[port]
 
-    def _dispatch_error(self, e, topic=None):
-        if topic==None:
-            topic = 'default'
-        subscribers = self.__subscribers__[topic]
+    def _dispatch_error(self, e, port=None):
+        if port==None:
+            port = 'default'
+        connections = self.__connections__[port]
         try:
-            for s in subscribers:
+            for s in connections:
                 s.on_error(e)
         except FatalError:
             raise
         except Exception as e:
             raise ExcInDispatch(e)
-        del self.__subscribers__[topic]
+        del self.__connections__[port]
 
     def _observe(self):
         # Get an event and call the appropriate dispatch function.
         raise NotImplemented
 
 
-class SensorPub(Publisher):
+class SensorAsOutputThing(OutputThing):
     __slots__ = ('sensor')
     def __init__(self, sensor):
         super().__init__(None)
@@ -189,28 +189,28 @@ class Scheduler:
                 i.next_tick = i.next_tick + i.ticks
         return sample_list
 
-    def schedule_periodic(self, publisher, interval):
+    def schedule_periodic(self, output_thing, interval):
         interval_ticks = int(round(interval*100))
         assert interval_ticks>0
-        self._add_task(publisher, interval_ticks)
+        self._add_task(output_thing, interval_ticks)
         def cancel():
-            self._remove_task(publisher)
+            self._remove_task(output_thing)
         return cancel
 
-    def schedule_sensor(self, sensor, interval, *subs):
-        task = SensorPub(sensor)
-        for s in subs:
-            task.subscribe(s)
+    def schedule_sensor(self, sensor, interval, *conns):
+        task = SensorAsOutputThing(sensor)
+        for s in conns:
+            task.connect(s)
         return self.schedule_periodic(task, interval)
     
     def run_forever(self):
         assert len(self.intervals)>0
         while True:
-            publishers = self._get_tasks()
+            output_things = self._get_tasks()
             start_ts = utime.ticks_ms()
-            for pub in publishers:
+            for pub in output_things:
                 pub._observe()
-                if not pub.__subscribers__:
+                if not pub.__connections__:
                     self._remove_task(pub)
             if len(self.intervals)==0:
                 break

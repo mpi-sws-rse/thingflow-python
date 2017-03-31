@@ -1,5 +1,5 @@
 =======================================
-Sensors for AntEvents, Micropython Port
+Sensors for ThingFlow, Micropython Port
 ========================================
 
 These are typically copied directly to the root directory on the micropython

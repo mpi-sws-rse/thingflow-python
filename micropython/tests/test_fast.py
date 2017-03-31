@@ -9,7 +9,7 @@ MQTT queue. To run it:
 1. Replace the CHANGE_ME values with the appropriate values for your environment
 2. Copy the script to the ESP8266 (e.g. via mpfsheel) and import the module.
 """
-from antevents import Scheduler 
+from thingflow import Scheduler 
 from mqtt_writer import MQTTWriter
 from wifi import wifi_connect
 import uos

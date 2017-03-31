@@ -4,7 +4,7 @@
 them to validate the system before deploying to 8266. They use stub
 sensors.
 
-Test the core antevents functionality.
+Test the core thingflow functionality.
 """
 
 import sys
@@ -13,10 +13,10 @@ import os.path
 import time
 
 try:
-    from antevents import *
+    from thingflow import *
 except ImportError:
     sys.path.append(os.path.abspath('../'))
-    from antevents import *
+    from thingflow import *
 
 import unittest
 
@@ -45,7 +45,7 @@ class DummySensor:
         return 'DummySensor'
 
 
-class ValidationSubscriber:
+class ValidationInputThing:
     """Compare the values in a event stream to the expected values.
     Use the test_case for the assertions (for proper error reporting in a unit
     test).
@@ -85,18 +85,18 @@ class TestBase(unittest.TestCase):
     def test_base(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
-        publisher = SensorPub(sensor)
-        validator = ValidationSubscriber(expected, self)
-        publisher.subscribe(validator)
+        output_thing = SensorAsOutputThing(sensor)
+        validator = ValidationInputThing(expected, self)
+        output_thing.connect(validator)
         scheduler = Scheduler()
-        scheduler.schedule_periodic(publisher, 1)
+        scheduler.schedule_periodic(output_thing, 1)
         scheduler.run_forever()
         self.assertTrue(validator.completed)
 
     def test_schedule_sensor(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
-        validator = ValidationSubscriber(expected, self)
+        validator = ValidationInputThing(expected, self)
         scheduler = Scheduler()
         scheduler.schedule_sensor(sensor, 1, validator)
         scheduler.run_forever()
@@ -107,22 +107,22 @@ class TestBase(unittest.TestCase):
         """
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected, sample_time=2)
-        publisher = SensorPub(sensor)
-        validator = ValidationSubscriber(expected, self)
-        publisher.subscribe(validator)
+        output_thing = SensorAsOutputThing(sensor)
+        validator = ValidationInputThing(expected, self)
+        output_thing.connect(validator)
         scheduler = Scheduler()
-        scheduler.schedule_periodic(publisher, 1)
+        scheduler.schedule_periodic(output_thing, 1)
         scheduler.run_forever()
         self.assertTrue(validator.completed)
 
     def test_subsecond_schedule_interval(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor(expected)
-        publisher = SensorPub(sensor)
-        validator = ValidationSubscriber(expected, self)
-        publisher.subscribe(validator)
+        output_thing = SensorAsOutputThing(sensor)
+        validator = ValidationInputThing(expected, self)
+        output_thing.connect(validator)
         scheduler = Scheduler()
-        scheduler.schedule_periodic(publisher, 0.25)
+        scheduler.schedule_periodic(output_thing, 0.25)
         start = time.time()
         scheduler.run_forever()
         stop = time.time()

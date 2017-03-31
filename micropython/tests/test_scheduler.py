@@ -12,10 +12,10 @@ import os
 import os.path
 
 try:
-    from antevents import *
+    from thingflow import *
 except ImportError:
     sys.path.append(os.path.abspath('../'))
-    from antevents import *
+    from thingflow import *
 
 
 import unittest

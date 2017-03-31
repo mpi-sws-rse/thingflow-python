@@ -20,10 +20,10 @@ import os.path
 import time
 
 try:
-    from antevents import *
+    from thingflow import *
 except ImportError:
     sys.path.append(os.path.abspath('../'))
-    from antevents import *
+    from thingflow import *
 
 
 import unittest
@@ -52,7 +52,7 @@ class DummySensor(object):
     def __str__(self):
         return 'DummySensor'
 
-class ValidationSubscriber:
+class ValidationInputThing:
     """Compare the values in a event stream to the expected values.
     Use the test_case for the assertions (for proper error reporting in a unit
     test).
@@ -102,13 +102,13 @@ class TestEndToEnd(unittest.TestCase):
     def test_publish_sensor(self):
         expected = [1, 2, 3, 4, 5]
         sensor = DummySensor('lux-1', expected)
-        publisher = SensorPub(sensor)
-        validator = ValidationSubscriber(expected, self)
-        publisher.subscribe(validator)
-        self.writer = MQTTWriter('antevents', 'localhost', MQTT_PORT, 'test')
-        publisher.subscribe(self.writer)
+        output_thing = SensorAsOutputThing(sensor)
+        validator = ValidationInputThing(expected, self)
+        output_thing.connect(validator)
+        self.writer = MQTTWriter('thingflow', 'localhost', MQTT_PORT, 'test')
+        output_thing.connect(self.writer)
         scheduler = Scheduler()
-        scheduler.schedule_periodic(publisher, 1)
+        scheduler.schedule_periodic(output_thing, 1)
         scheduler.run_forever()
         self.assertTrue(validator.completed)        
         
