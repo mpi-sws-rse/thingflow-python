@@ -1,29 +1,29 @@
 ===========================
-Ant Events Micropython Port
+ThingFlow MicroPython Port
 ===========================
 
-This is a port of Ant Events to Micropython_, a bare-metal implementation of
+This is a port of ThingFlow to MicroPython_, a bare-metal implementation of
 Python 3 for small processors. This port has been tested on the ESP8266_
-using version 1.8.3 of Micropython.
+using version 1.8.7 of MicroPython.
 
-Micropython has only a subset of the libraries that come with the standard
+MicroPython has only a subset of the libraries that come with the standard
 CPython implementation. For example, an event library, threading, and even
-logging are missing. This port currently only provides a subset of the
-Ant Events functionality. Some of the APIs are a little different, too. These
-will be made more consistent in time. The assumption is that processors like
+logging are missing. This ThingFlow port currently only provides a subset of the
+ThingFlow functionality, due to the library limitation and memory limitations
+on the ESP8266.. The assumption is that processors like
 the ESP8266 are used primarily to sample sensor data and pass it on to
 a larger system (e.g. a Raspberry Pi or a server).
 
-The core implementation is in antevents.py. The other files (logger.py,
+The core implementation is in thingflow.py. The other files (logger.py,
 mqtt_writer.py, and wifi.py) provide some additional utilities.
 
-.. _Micropython: http://www.micropython.org
+.. _MicroPython: http://www.micropython.org
 .. _ESP8266: https://en.wikipedia.org/wiki/ESP8266
 
 Installing
 ==========
-Just copy the python files in this directory to your micropython board.
-Micropython's webrepl has experimental support for copying files. I
+Just copy the python files in this directory to your MicroPython board.
+MicroPython's webrepl has experimental support for copying files. I
 instead used mpfshell_ to copy files to my ESP8266 board.
 
 To free up more memory, I disabled the starting if the webrepl in the
@@ -33,7 +33,7 @@ To free up more memory, I disabled the starting if the webrepl in the
 
 Bug Workarounds
 ===============
-The antevents code has a few workarounds for bugs in Micropython (at least
+The thingflow code has a few workarounds for bugs in MicroPython (at least
 the ESP8266 port).
 
 Clock wrapping
@@ -51,13 +51,13 @@ yields 1,069,506 seconds instead of 59 seconds. Luckily, an assert in
 
 Long variable names for keyword arguments
 -----------------------------------------
-There is a bug in Micropython where keyword argument names longer than 10
+There is a bug in MicroPython where keyword argument names longer than 10
 characters can result in a incorrect exception saying that keyword arguments
-are not implemented. I think this is related to Micropython issue #1998.
+are not implemented. I think this is related to MicroPython issue #1998.
 
 Sensors
 =======
-Sensor code for the Micropython port are in the ``sensors`` subdirectory.
+Sensor code for the MicroPython port are in the ``sensors`` subdirectory.
 See the ``README.rst`` file in that directory for details.
 
 Design Notes
@@ -65,13 +65,13 @@ Design Notes
 
 Scheduler Design
 -----------------
-Since micropython does not provide an event scheduler, we provide one directly
-in antevents.py. This scheduler is optimized for minimal power consumption (by
+Since MicroPython does not provide an event scheduler,[*]_ we provide one directly
+in thingflow.py. This scheduler is optimized for minimal power consumption (by
 reducing wake-ups) rather than for robustness in the face of tight deadlines.
 
 The scheduler has two layers: the *internal* layer (represented by the methods
 starting with an underscore) and the *public* layer. The public layer provides
-an API similar to the standard Ant Events scheduler and is built on the internal
+an API similar to the standard ThingFlow scheduler and is built on the internal
 layer.
 
 For ease of testing and flexibility, the internal layer is designed such that the
@@ -88,7 +88,7 @@ logical clock, it is automatically wrapped every 65535 ticks. The logical
 times for each for each scheduled task are then updated to reflect the wrapped
 clock.
 
-When a task (publisher) is added to the scheduler, a sample interval is
+When a task (output_thing) is added to the scheduler, a sample interval is
 specified. To optimize for wakeups, the following approaches are used:
 
 1. Tasks with the same interval are always scheduled together. If a new task is
@@ -106,9 +106,14 @@ specified. To optimize for wakeups, the following approaches are used:
    had run at the correct time (by making the interval shorter). This avoids
    tasks getting out-of-sync when one misses a deadline.
 
-The public API layer is a subset of the standard Ant Events scheduler API,
+The public API layer is a subset of the standard ThingFlow scheduler API,
 except for the additional ``schedule_sensor`` convenience method.
- 
+
+.. [*] I have heard rumors about a port of the ``async`` library to MicroPython.
+       However, it still makes sense to use this custom scheduler, as it is
+       likely to be more power efficent due to its strategy of scheduling
+       events together.
+
 Logger
 ------
  ``logger.py`` provides a very simple rotating file logger with an API that

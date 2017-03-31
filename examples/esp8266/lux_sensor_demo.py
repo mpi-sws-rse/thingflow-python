@@ -1,7 +1,7 @@
 # Simple demo of reading the tsl2591 lux sensor from the
 # ESP8266 running micropython.
 
-from antevents import *
+from thingflow import *
 from tsl2591 import Tsl2591
 tsl = Tsl2591('lux-1')
 tsl.sample()

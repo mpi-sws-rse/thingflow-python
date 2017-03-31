@@ -8,7 +8,7 @@ the file renamed to 'main.py' which will be run when the ESP8266 is booted. Mpfs
 is recommended for transferring MicroPython files to the ESP8266.
 
 """
-from antevents import Scheduler 
+from thingflow import Scheduler 
 from adxl345_upy import ADXL345_upy
 from mqtt_writer import MQTTWriter
 from wifi import wifi_connect
