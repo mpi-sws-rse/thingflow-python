@@ -86,7 +86,7 @@ dependencies (e.g. the MQTT adapters depend on MQTT client libraries).
 
 Documentation
 -------------
-Documentation is hosted at `readthedocs.org <https://readthedocs.org/>`_.
+Documentation is hosted online at http://thingflow-python.readthedocs.io.
 
 The source tree for the documentation is in the ``docs`` subdirectory - it is
 built using `Sphinx <http://www.sphinx-doc.org/en/stable/>`_. If you have Sphinx
