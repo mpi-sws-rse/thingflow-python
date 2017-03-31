@@ -6,16 +6,18 @@
 ThingFlow-Python
 ================
 ThingFlow is a (Python3) framework for building IoT event
-processing dataflows.[#]_  The goal of this framework is to support the
+processing dataflows. [#]_  The goal of this framework is to support the
 creation of robust IoT systems from reusable components. These systems must
 account for noisy/missing sensor data, distributed computation, and the need for
 local (near the data source) processing.
 
-The source repository for ThingFlow-python is at https://github.com/mpi-sws-rse/thingflow-python
+The source repository for ThingFlow-python is at https://github.com/mpi-sws-rse/thingflow-python.
 
 Sections 1 and 2 of this documentation cover how to get started. Sections 3
-through 6 cover more advanced topics. Finally, Section 7 contains reference
-documentation for the API (extracted from the docstrings).
+through 5 cover more advanced topics. Section 6 covers our port of ThingFlow to
+MicroPython on the ESP8266. Section 7 documents some design decisions made during
+the evolution of ThingFlow. Finally, Section 8 contains reference
+documentation for the full ThingFlow-python API (extracted from the docstrings).
 
 .. [#] *ThingFlow* was originally known as *AntEvents*.
 
@@ -29,6 +31,7 @@ Contents:
    output_things
    ports
    functional-api
+   micropython
    design-notes
    reference
 

@@ -25,6 +25,14 @@ data analytics frameworks, including NumPy_, Pandas_, and scikit-learn_. This
 allows dataflows involving complex elements to be developed and refined offline
 and then deployed in an IoT environment using the same code base.
 
+We call the implementation described here "ThingFlow-Python", as it should be
+possible to port the ideas of ThingFlow to other languages. Currently, one such
+port exists: "ThingFlow-MicroPython". This is a port ThingFlow to MicroPython,
+a limited version of Python 3 that runs "bare metal" on embadded devices. The
+ThingFlow-MicroPython port is included in the ThingFlow-Python repository
+under the subdirector ``micropython``. It is documented in
+:ref:`Section 7 <micropython>` of this document.
+
 
 .. _NumPy: http://www.numpy.org/
 .. _Pandas: http://pandas.pydata.org/
@@ -99,7 +107,7 @@ Directory Layout
 The layout of the files in the ThingFlow code repository (the ``thingflow-python``
 directory) is as follows:
 
-+ ``README.RST`` - this file, top level documentation
++ ``README.RST`` - a short introduction and pointer to resources
 + ``Makefile`` - builds the source distribution and documentation; can run the tests
 + ``setup.py`` - used to install the core code into a python environment
 + ``thingflow/`` - the core code. This is all that will get installed in a

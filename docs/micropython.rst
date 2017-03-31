@@ -1,8 +1,7 @@
-===========================
-ThingFlow MicroPython Port
-===========================
 
-This is a port of ThingFlow to MicroPython_, a bare-metal implementation of
+6. ThingFlow-MicroPython Port
+=============================
+This section describes the  port of ThingFlow to MicroPython_, a bare-metal implementation of
 Python 3 for small processors. This port has been tested on the ESP8266_
 using version 1.8.7 of MicroPython.
 
@@ -14,14 +13,18 @@ on the ESP8266.. The assumption is that processors like
 the ESP8266 are used primarily to sample sensor data and pass it on to
 a larger system (e.g. a Raspberry Pi or a server).
 
-The core implementation is in thingflow.py. The other files (logger.py,
-mqtt_writer.py, and wifi.py) provide some additional utilities.
+The code for this port may
+be found in the main ThingFlow-Python repository, under the ``micropython``
+subdirectory.
+The core implementation is in ``miropython/thingflow.py``.
+The other files (``logger.py``,
+``mqtt_writer.py``, and ``wifi.py``) provide some additional utilities.
 
 .. _MicroPython: http://www.micropython.org
 .. _ESP8266: https://en.wikipedia.org/wiki/ESP8266
 
 Installing
-==========
+-----------
 Just copy the python files in this directory to your MicroPython board.
 MicroPython's webrepl has experimental support for copying files. I
 instead used mpfshell_ to copy files to my ESP8266 board.
@@ -32,12 +35,12 @@ To free up more memory, I disabled the starting if the webrepl in the
 .. _mpfshell: https://github.com/wedlers/mpfshell
 
 Bug Workarounds
-===============
+---------------
 The thingflow code has a few workarounds for bugs in MicroPython (at least
 the ESP8266 port).
 
 Clock wrapping
---------------
+~~~~~~~~~~~~~~
 The clock on the ESP8266 wraps once every few hours. This causes problems when
 we wish to measure sleep time. The ``utime.ticks_diff()`` function is
 supposed to handle this, bug apparently is buggy. This leads to cases where
@@ -50,23 +53,23 @@ yields 1,069,506 seconds instead of 59 seconds. Luckily, an assert in
 ``end_ts`` (the earlier time) was 4266929 and the current timestamp was 30963.
 
 Long variable names for keyword arguments
------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 There is a bug in MicroPython where keyword argument names longer than 10
 characters can result in a incorrect exception saying that keyword arguments
 are not implemented. I think this is related to MicroPython issue #1998.
 
 Sensors
-=======
+-------
 Sensor code for the MicroPython port are in the ``sensors`` subdirectory.
 See the ``README.rst`` file in that directory for details.
 
 Design Notes
-=============
+------------
 
 Scheduler Design
------------------
+~~~~~~~~~~~~~~~~
 Since MicroPython does not provide an event scheduler, [#]_ we provide one directly
-in thingflow.py. This scheduler is optimized for minimal power consumption (by
+in ``thingflow.py``. This scheduler is optimized for minimal power consumption (by
 reducing wake-ups) rather than for robustness in the face of tight deadlines.
 
 The scheduler has two layers: the *internal* layer (represented by the methods
@@ -115,7 +118,7 @@ except for the additional ``schedule_sensor`` convenience method.
        events together.
 
 Logger
-------
+~~~~~~
  ``logger.py`` provides a very simple rotating file logger with an API that
  is a subset of Python's ``logging`` API. Given a log file ``outputfile``,
  it will log events to that file until the length would exceed ``max_len``.

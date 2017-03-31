@@ -531,7 +531,8 @@ class FunctionFilter(Filter):
     style is more convenient.
 
     Each function takes a "self" parameter, so it works almost like it was
-    defined as a bound method. The signatures are then:
+    defined as a bound method. The signatures are then::
+
         on_next(self, x)
         on_completed(self)
         on_error(self, e)
@@ -637,6 +638,7 @@ def filtermethod(base, alias=None):
     of thingflow.base.Filter.
 
     The specified function is used in two places:
+
     1. A method with the specified name is added to the specified class
        (usually the OutputThing base class). This is for the fluent (method
        chaining) API.
@@ -646,13 +648,13 @@ def filtermethod(base, alias=None):
        when passed a OutputThing, connects to it and returns a filter.
 
     Decorator arguments:
-    :param T base: Base class to extend with method
-     (usually thingflow.base.OutputThing)
-    :param string alias: an alias for this function or list of aliases
-                         (e.g. map for select, etc.).
 
-    :returns: A function that takes the class to be decorated.
-    :rtype: func -> func
+    * param T base: Base class to extend with method
+      (usually thingflow.base.OutputThing)
+    * param string alias: an alias for this function or list of aliases
+                         (e.g. map for select, etc.).
+    * returns: A function that takes the class to be decorated.
+    * rtype: func -> func
 
     This was adapted from the RxPy extensionmethod decorator.
     """
@@ -754,12 +756,12 @@ def from_list(l):
 # XXX Move this out of base.py
 class FunctionIteratorAsOutputThing(OutputThing, DirectOutputThingMixin):
     """Generates an OutputThing sequence by running a state-driven loop
-        producing the sequence's elements
-        Example:
-        res = GenerateOutputThing(0,
-                                 lambda x: x < 10,
-                                 lambda x: x + 1,
-                                 lambda x: x)
+       producing the sequence's elements. Example::
+
+           res = GenerateOutputThing(0,
+                                     lambda x: x < 10,
+                                     lambda x: x + 1,
+                                     lambda x: x)
 
         initial_state: Initial state.
         condition: Condition to terminate generation (upon returning False).

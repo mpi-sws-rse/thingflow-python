@@ -5,7 +5,8 @@ This sub-module provides a collection of filters for providing linq-style
 programming (inspired by RxPy).
 
 Each function appears as a method on the OutputThing base class, allowing for
-easy chaining of calls. For example:
+easy chaining of calls. For example::
+
     sensor.where(lambda x: x > 100).select(lambda x: x*2)
 
 If the @filtermethod decorator is used, then a standalone function is also
@@ -13,19 +14,20 @@ defined that takes all the arguments except the  publisher and returns a
 function which, when called, takes a publisher and subscribes to the publisher.
 We call this returned function a "thunk". Thunks can be used with combinators
 (like compose(), parallel(), and passthrough(), all defined in combinators.py)
-as well as directly with the scheduler. For example:
+as well as directly with the scheduler. For example::
+
     scheduler.schedule_sensor(sensor, where(lambda x: x> 100),
                                       select(lambda x: x*2))
 
 
 The implementation code for a linq-style filter typically looks like the
-following:
+following::
 
-@filtermethod(OutputThing)
-def example(this, ...):
-    def _filter(self, x):
-        ....
-    return FunctionFilter(this, _filter, name="example")
+    @filtermethod(OutputThing)
+    def example(this, ...):
+        def _filter(self, x):
+            ....
+        return FunctionFilter(this, _filter, name="example")
 
 Note that, by convention, we use `this` as the first argument of the function,
 rather than self. The `this` parameter corresponds to the previous element in
