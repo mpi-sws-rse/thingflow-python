@@ -10,7 +10,7 @@ import time
 import hbmqtt.client
 from collections import deque
 
-from antevents.base import SensorEvent
+from thingflow.base import SensorEvent
 
 URL = "mqtt://localhost:1883"
 
