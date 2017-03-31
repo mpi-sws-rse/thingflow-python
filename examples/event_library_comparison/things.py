@@ -1,17 +1,17 @@
 """
-Comparing AntEvents to generic asyncio programming.
+Comparing ThingFlow to generic asyncio programming.
 
-This is the AntEvents version.
+This is the ThingFlow version.
 """
 import asyncio
 import random
 from statistics import median
-from antevents.base import DefaultSubscriber, SensorEvent, Scheduler, SensorPub
-from antevents.linq.transducer import Transducer
-import antevents.linq.combinators
-import antevents.adapters.csv
-from antevents.adapters.mqtt_async import mqtt_async_send
-import antevents.linq.output
+from thingflow.base import InputThing, SensorEvent, Scheduler, SensorAsOutputThing
+from thingflow.filters.transducer import Transducer
+import thingflow.filters.combinators
+import thingflow.adapters.csv
+from thingflow.adapters.mqtt_async import mqtt_async_send
+import thingflow.filters.output
 
 URL = "mqtt://localhost:1883"
 
@@ -75,8 +75,8 @@ class PeriodicMedianTransducer(Transducer):
 
 SENSOR_ID = 'sensor-1'
 scheduler = Scheduler(asyncio.get_event_loop())
-sensor = SensorPub(RandomSensor(SENSOR_ID, mean=10, stddev=5, stop_after_events=12))
-sensor.csv_writer('raw_data.csv').subscribe(lambda x: print("raw data: %s" % repr(x)))
+sensor = SensorAsOutputThing(RandomSensor(SENSOR_ID, mean=10, stddev=5, stop_after_events=12))
+sensor.csv_writer('raw_data.csv').connect(lambda x: print("raw data: %s" % repr(x)))
 sensor.transduce(PeriodicMedianTransducer()).mqtt_async_send(URL, SENSOR_ID, scheduler).output()
 scheduler.schedule_periodic(sensor, 0.5)
 scheduler.run_forever()

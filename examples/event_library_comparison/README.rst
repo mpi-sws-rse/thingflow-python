@@ -2,7 +2,7 @@
 Comparison with Async/Await
 ===========================
 
-Here, we compare AntEvents to generic event-driven code using the new
+Here, we compare ThingFlow to generic event-driven code using the new
 ``async`` / ``await`` language feature available starting with Python 3.5.
 
 Scenario
@@ -82,9 +82,9 @@ callback (``done_callback``). This callback checks for errors and the
 completion of the sensor. If neither of those happened, it reschedules
 the loop to run in half a second.
 
-AntEvents Version
+ThingFlow Version
 -----------------
-In the AntEvents version, state is maintained by each individual component, and
+In the ThingFlow version, state is maintained by each individual component, and
 we can rely on the scheduler to deal with calling our task periodically.
 Boundary events (errors and termination) are handled through a combination of
 the scheduler and the individual AntEvent filters. Assuming we already have a
@@ -92,10 +92,10 @@ transducer class and an adapter to the queue, the entire code for this scenario
 is::
 
     scheduler = Scheduler(asyncio.get_event_loop())
-    sensor = SensorPub(RandomSensor(SENSOR_ID, mean=10, stddev=5, stop_after_events=12))
+    sensor = SensorAsOutputThing(RandomSensor(SENSOR_ID, mean=10, stddev=5, stop_after_events=12))
     sensor.csv_writer('raw_data.csv'))
     q_writer = QueueWriter(URL, SENSOR_ID, scheduler)
-    sensor.transduce(PeriodicMedianTransducer()).subscribe(q_writer)
+    sensor.transduce(PeriodicMedianTransducer()).connect(q_writer)
     scheduler.schedule_periodic(sensor, 0.5)
     scheduler.run_forever()
 
@@ -105,23 +105,23 @@ second pipeline from the sensor, through the transducer, and to the queue.
 Evaluation
 ----------
 The async/await implementation largely follows a traditional procedural style. [1]_
-Overall, the async/await has two disadvantages relative to AntEvents:
+Overall, the async/await has two disadvantages relative to ThingFlow:
 
 1. The async nature of the coroutines is viral in the sense that any
    functions/methods calling an async (coroutine) method must also be
    async. This causes implementation decisions about whether to use
    asynchronous or synchronous APIs to have a non-local impact. In contrast,
-   AntEvents can support asynchronous APIs as well as components running
+   ThingFlow can support asynchronous APIs as well as components running
    in separate threads, without any application-level changes.
 2. Each function in the async/await program's call stack must also have control
    flow to handle three possible situations: a normal event, an error, or the
-   end of events from the upstream sensor. In AntEvents, these are handled
+   end of events from the upstream sensor. In ThingFlow, these are handled
    by the (reusable) components via the ``on_next``, ``on_error``, and
-   ``on_completed`` methods. AntEvents application code only needs to
+   ``on_completed`` methods. ThingFlow application code only needs to
    be concerned with the overall structure of the data flow.
 
-AntEvents achieves this simplicity by providing a level of indirection in the
-programming model. The AntEvents code actually generates the application by
+ThingFlow achieves this simplicity by providing a level of indirection in the
+programming model. The ThingFlow code actually generates the application by
 connecting and configuring the requested components. The filter abstraction
 used by the application programmer is at a much higher level than the procedural
 abstractions used in an async/await application.
@@ -134,4 +134,4 @@ Code
 ----
 Full working code for both versions is available in this directory:
 ``asyncawait.py`` implements the scenario using coroutines and ``ant.py``
-uses AntEvents.
+uses ThingFlow.
