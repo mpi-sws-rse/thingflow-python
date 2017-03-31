@@ -87,7 +87,7 @@ ThingFlow Version
 In the ThingFlow version, state is maintained by each individual component, and
 we can rely on the scheduler to deal with calling our task periodically.
 Boundary events (errors and termination) are handled through a combination of
-the scheduler and the individual AntEvent filters. Assuming we already have a
+the scheduler and the individual ThingFlow filters. Assuming we already have a
 transducer class and an adapter to the queue, the entire code for this scenario
 is::
 
@@ -133,5 +133,5 @@ abstractions used in an async/await application.
 Code
 ----
 Full working code for both versions is available in this directory:
-``asyncawait.py`` implements the scenario using coroutines and ``ant.py``
+``asyncawait.py`` implements the scenario using coroutines and ``things.py``
 uses ThingFlow.
