@@ -10,8 +10,6 @@ local (near the data source) processing.
 
 The source repository for ThingFlow-python is at https://github.com/mpi-sws-rse/thingflow-python.
 
-.. [#] *ThingFlow* was originally known as *AntEvents*.
-
 Introduction
 ============
 The fundamental abstractions in ThingFlow are 1) *sensors*, which provide a means
@@ -86,10 +84,13 @@ dependencies (e.g. the MQTT adapters depend on MQTT client libraries).
 
 Documentation
 -------------
-Documentation is hosted at Read the Docs.
+Documentation is hosted at `readthedocs.org <https://readthedocs.org/>`_.
 
 The source tree for the documentation is in the ``docs`` subdirectory - it is
-built using Sphinx. If you have Sphinx installed locally (along with the "Read
-the Docs" theme), you can also build it directly on your machine.
+built using `Sphinx <http://www.sphinx-doc.org/en/stable/>`_. If you have Sphinx
+installed locally (along with the "Read the Docs" theme), you can also build it
+directly on your machine.
 
+
+.. [#] *ThingFlow* was originally known as *AntEvents*.
 
