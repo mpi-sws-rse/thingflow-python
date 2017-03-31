@@ -12,12 +12,14 @@ The source repository for ThingFlow-python is at https://github.com/mpi-sws-rse/
 
 Introduction
 ============
-The fundamental abstractions in ThingFlow are 1) *sensors*, which provide a means
-to sample a changing value representing some quanity in the physical world, 2)
-*event streams*, which are
-push-based sequences of sensor data readings, and 3) *things*, which are
-reusable components to generate, transform, or consume the events on these
-streams. Things can have simple, stateless logic (e.g. filter events based
+The fundamental abstractions in ThingFlow are:
+
+1. *sensors*, which provide a means
+   to sample a changing value representing some quanity in the physical world,
+2. *event streams*, which are push-based sequences of sensor data readings, and
+3. *things*, which are reusable components to generate, transform, or consume the events on these streams.
+
+Things can have simple, stateless logic (e.g. filter events based
 on a predicate) or implement more complex, stateful algorithms, such as
 Kalman filters or machine learning. Using ThingFlow, you describe the flow of
 data through these things rather than programming low-level behaviors. 
