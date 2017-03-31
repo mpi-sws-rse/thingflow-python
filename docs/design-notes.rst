@@ -42,7 +42,7 @@ perhaps modeled after the Adafruit Unified Sensor Driver
 
 **Outcome**: Changed
 
-We created the *sensor* abstraction and the ``SensorAsOutputTHing`` wrapper class to
+We created the *sensor* abstraction and the ``SensorAsOutputThing`` wrapper class to
 adapt any sensor to the output thing API. We left the original output thing API,
 as there are still cases (e.g. adapters) that do not fit into the sensor
 sampling model.
@@ -122,7 +122,7 @@ Related Work
 The architecture was heavily influenced by Microsoft's Rx_ (Reactive Extensions)
 framework and the Click_ modular router. We started by trying to simplfy Rx for
 the IoT case and remove some of the .NETisms. A key addition was the support for
-multiple topics, which makes more complex dataflows possible.
+multiple ports, which makes more complex dataflows possible.
 
 .. _Rx: https://msdn.microsoft.com/en-us/data/gg577609.aspx
 .. _Click: http://read.cs.ucla.edu/click/click

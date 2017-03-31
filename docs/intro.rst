@@ -27,11 +27,11 @@ and then deployed in an IoT environment using the same code base.
 
 We call the implementation described here "ThingFlow-Python", as it should be
 possible to port the ideas of ThingFlow to other languages. Currently, one such
-port exists: "ThingFlow-MicroPython". This is a port ThingFlow to MicroPython,
+port exists: "ThingFlow-MicroPython". This is a port of ThingFlow to MicroPython,
 a limited version of Python 3 that runs "bare metal" on embadded devices. The
 ThingFlow-MicroPython port is included in the ThingFlow-Python repository
-under the subdirector ``micropython``. It is documented in
-:ref:`Section 7 <micropython>` of this document.
+under the subdirectory ``micropython``. It is documented in
+:ref:`Section 7 <micropython_port>` of this document.
 
 
 .. _NumPy: http://www.numpy.org/
