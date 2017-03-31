@@ -1,17 +1,18 @@
-=============
-Design Issues
-=============
+.. _design:
+
+6. Design Notes
+===============
 
 This document describes some design decisions in the AntEvents API
 that are or were under discussion.
 
 Open Issues
-===========
+-----------
 At the end of each issue, there is a line that indicates the current bias for
 a decision, either **Keep as is** or **Change**.
 
 Disposing of Subscriptions
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 In the current system, the ``Publisher.subscribe`` method returns a "dispose"
 thunk that can be used to undo the subscription. This is modeled after the
 ``subscribe`` method in Microsoft's Rx framework. Does this unnecessarily
@@ -30,7 +31,7 @@ sensor after a certain number of calls by disposing of the subscription.
 Bias: **Keep as is**
 
 Terminology: Reader/Writer vs. Source/Sink
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 We introduced the *reader* and *writer* terms to refer to publishers that
 introduce event streams into the system and subscribers that consume event
 streams with no output, respectively. This was introduced to avoid confusion
@@ -46,7 +47,7 @@ and *sink* would be more obvious. Is it worth the change?
 Bias: **Keep as is**
 
 The ``on_error`` Callback
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 Borrowing from Microsoft's Rx framework, Ant Events has three callbacks on each
 subscriber: ``on_next``, ``on_completed``, and ``on_error``. The ``on_error`` callback
 is kind of strange: since it is defined to be called *at most once*, it is
@@ -77,13 +78,13 @@ In general, error handling needs more experience and thought.
 Bias: **Change, but not sure what to**
 
 Closed Issues
-=============
+-------------
 These issues have already been decided, and any recommended changes implemented
 in the AntEvents API. The text for each issue still uses the future tense,
 but we provide the outcome of the decision at the end of each section.
 
 Publishers, Sensors, and the Scheduler
---------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Today, sensors are just a special kind of publisher. Depending on whether it is
 intended to be blocking or non-blocking, it implements ``_observe`` or
 ``observe_and_enqueue``. The reasoning behind this was to make it impossible to
@@ -102,3 +103,13 @@ We created the *sensor* abstraction and the ``SensorPub`` wrapper class to
 adapt any sensor to the publisher API. We left the original publisher API,
 as there are still cases (e.g. adapters) that do not fit into the sensor
 sampling model.
+
+Related Work
+------------
+The architecture was heavily influenced by Microsoft's Rx_ (Reactive Extensions)
+framework and the Click_ modular router. We started by trying to simplfy Rx for
+the IoT case and remove some of the .NETisms. A key addition was the support for
+multiple topics, which makes more complex dataflows possible.
+
+.. _Rx: https://msdn.microsoft.com/en-us/data/gg577609.aspx
+.. _Click: http://read.cs.ucla.edu/click/click

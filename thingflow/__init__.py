@@ -10,7 +10,7 @@ The rest of the functionality is in sub-packages:
 
  * `adapters` - components to read/write events outside the system
  * `internal` - some internal definitions
- * `linq` - filters that allow linq-style query pipelines over event streams
+ * `filters` - filters that allow linq-style query pipelines over event streams
  * `sensors` - interfaces to sensors go here
 """
 

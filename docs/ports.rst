@@ -1,6 +1,7 @@
-=============================
-Things with Non-default Ports
-=============================
+.. _ports:
+
+4. Things with Non-default Ports
+================================
 
 ThingFlow provides a general dataflow architecture. Output things can
 output events on different ports and input things can receive messages via
@@ -21,7 +22,9 @@ Multiple Output Ports
 To create an output thing which sends messaages on multiple output ports,
 one subclasses from ``OutputThing`` or one of its descendents. Here is a simple
 thing that accepts events on the default input port and sends values to one or
-more of three ports::
+more of three ports:
+
+.. code-block:: python
 
     class MultiPortOutputThing(OutputThing, InputThing):
         def __init__(self, previous_in_chain):
@@ -73,7 +76,9 @@ a separate event stream with its own state. An output thing might decide to
 mark completed a subset of its ports while continuing to send new events
 on other ports.
 
-Let us look at how this thing might be called::
+Let us look at how this thing might be called:
+
+.. code-block:: python
 
     sensor = SensorAsOutputThing(RandomSensor(1, mean=10, stddev=5,
                                               stop_after_events=10))
@@ -106,7 +111,9 @@ when implementing state machines or filters that combine multiple inputs.
 
 As an example, assume that we have a state machine that reads data
 from two sensors: a *left* sensor and a *right* sensor. Here is how the code
-might be structured::
+might be structured:
+
+.. code-block:: python
 
     class StateMachine:
         def on_left_next(self, x):
@@ -122,7 +129,9 @@ might be structured::
 	def on_right_error(self):
 	    ...
 
-Here is how we might set up the connections to the sensors::
+Here is how we might set up the connections to the sensors:
+
+.. code-block:: python
 
     left = SensorAsOutputThing(LuxSensor('left'))
     right = SensorPsOutputThing(LuxSensor('right'))
@@ -153,7 +162,9 @@ port and the rule search stops for that event. If an event fails all the
 predicate checks, it is passed to the ``default`` port.
 
 Here is the most relevant parts of the filter code (see ``dispatch.py`` for the
-complete code)::
+complete code):
+
+.. code-block:: python
 
     class Dispatcher(OutputThing, InputThing):
         def __init__(self, previous_in_chain, dispatch_rules):

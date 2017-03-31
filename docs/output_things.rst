@@ -1,6 +1,7 @@
-===========================
-Implementing an OutputThing
-===========================
+.. _output_things:
+
+3. Implementing an OutputThing
+==============================
 In most cases, one can simply wrap a sensor in the ``SensorAsOutputThing``
 class and not worry about the details of how to implement output things. There
 are also several pre-defined *readers* under ``thingflow.adapters`` that can
@@ -43,7 +44,9 @@ Simple CSV Reader
 OK, with all that out of the way, let us define a simple OutputThing. We will
 create a simple CSV-formatted spreadsheet file reader. Each row in the
 file corresponds to an event. Here is the class definition (found in
-``examples/simple_csv_reader.py``)::
+``examples/simple_csv_reader.py``):
+
+.. code-block:: python
 
     import csv
     from thingflow.base import OutputThing, DirectOutputThingMixin,\
@@ -126,7 +129,9 @@ We can instantiate a ``SimpleCsvReader`` to read in the file via::
     reader = SimpleCsvReader("test.csv")
 
 Now, let's hook it to an printing input thing and then run it in the event
-loop::
+loop:
+
+.. code-block:: python
 
     import asyncio
     from thingflow.base import Scheduler

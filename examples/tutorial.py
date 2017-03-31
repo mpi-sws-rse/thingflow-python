@@ -66,8 +66,8 @@ led = LED()
 # Now, build a pipeline to sample events returned from the sensor,
 # convert to a boolean based on whether the value is greater than
 # the mean, and output to the LED.
-import thingflow.filters.select
-sensor.select(lambda evt: evt.val > MEAN).connect(led)
+import thingflow.filters.map
+sensor.map(lambda evt: evt.val > MEAN).connect(led)
 
 # If you want to see the raw value of each sensor, just add the output() element
 import thingflow.filters.output
