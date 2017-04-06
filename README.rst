@@ -43,7 +43,8 @@ port exists: "ThingFlow-MicroPython". This is a port ThingFlow to MicroPython,
 a limited version of Python 3 that runs "bare metal" on embadded devices. The
 ThingFlow-MicroPython port is included in the ThingFlow-Python repository
 under the subdirector ``micropython``. It is documented in
-:ref:`Section 7 <micropython>` of this document.
+`Section 7 <http://thingflow-python.readthedocs.io/en/latest/micropython.html>`_
+of the documentation.
 
 
 .. _NumPy: http://www.numpy.org/

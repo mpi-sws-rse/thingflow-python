@@ -9,7 +9,7 @@ different ports. Each ``connect()`` call can rename ports, allowing the
 interconnection of any compatible ports. For example, one might have code like::
 
     output_thing.connect(input_thing,
-                         topic_mapping=('out_port_name', 'in_port_name'))
+                         port_mapping=('out_port_name', 'in_port_name'))
 
 As you know, ThingFlow provides a special ``default`` port that does not need
 any mapping. This makes it convenient for building chains of filters and is good
