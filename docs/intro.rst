@@ -130,10 +130,6 @@ directory) is as follows:
 More Examples
 -------------
 There is also a separate repository with larger ThingFlow examples. It is at
-https://github.com/mpi-sws-rse/thingflow-examples. [#]_
+https://github.com/mpi-sws-rse/thingflow-examples.
 
 Next, we will go into more detail on ThingFlow with a :ref:`tutorial <tutorial>`.
-
-.. [#] Ok, that link is not working yet. We have a repo for the older AntEvents
-       framework at https://github.com/mpi-sws-rse/antevents-examples, which will
-       be eventually ported over.
