@@ -1,7 +1,7 @@
 # Makefile for antevents - just a simple wrapper over shell commands
 
 help:
-	@echo "make targets are: sdist tests clean help"
+	@echo "make targets are: dist tests clean help"
 
 dist:
 	python3 setup.py sdist
