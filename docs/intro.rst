@@ -90,14 +90,36 @@ directory.
 Installing ThingFlow
 ---------------------
 We recommend installing into a ``virtualenv`` rather than directly into the
-system's Python. To install, first run the ``activate`` script of your chosen
-virtual environment, and go to the ``thingflow-python`` directory. Then run::
+system's Python. To do so, first run the ``activate`` script of your chosen
+virtual environment. Next, you can either install from the Python Package
+Index website (pypi.python.org) or from the ThingFlow source
+tree.
+
+Installing from the Python Package Index
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The package name of thingflow-python on PyPi is ``thingflow``. You
+can use the ``pip`` utility to install, as follows::
+
+      pip3 install thingflow
+
+If you have activated your virtual environment, this should pick up the
+version of ``pip3`` associated with your environment, and install ThingFlow
+into your environment rather than into the system's Python install.
+
+Installing from the source tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Go to the ``thingflow-python`` directory and then run::
 
     python3 setup.py install
 
-In the future, we will have support for installing from the Python Package
-Index, PyPi.
+If you have activated your virtual environment, this should pick up the
+version of ``python3`` associated with your environment, and install ThingFlow
+into your environment rather than into the system's Python install.
+    
+    
 
+Using ThingFlow without installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 You can also run the ThingFlow code in-place from the git repository by adding
 the full path to the ``thingflow-python`` directory to your ``PYTHONPATH``. This
 is how the tests and the examples are run.
@@ -130,6 +152,7 @@ directory) is as follows:
 More Examples
 -------------
 There is also a separate repository with larger ThingFlow examples. It is at
-https://github.com/mpi-sws-rse/thingflow-examples.
+https://github.com/mpi-sws-rse/thingflow-examples. This repository includes an automated
+lighting application and a vehicle traffic analysis.
 
 Next, we will go into more detail on ThingFlow with a :ref:`tutorial <tutorial>`.
