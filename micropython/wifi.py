@@ -21,6 +21,16 @@ def wifi_connect(essid, password):
         # and then reconnect.
         print('Wifi already connected, network config: %s' % repr(wlan.ifconfig()))
 
+def wifi_disconnect():
+    # Disconnect from the current network. You may have to
+    # do this explicitly if you switch networks, as the params are stored
+    # in non-volatile memory.
+    wlan = network.WLAN(network.STA_IF)
+    if wlan.isconnected():
+        print("Disconnecting...")
+        wlan.disconnect()
+    else:
+        print("Wifi not connected.")
 
 def disable_wifi_ap():
     # Disable the built-in access point.
