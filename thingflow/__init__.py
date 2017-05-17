@@ -14,4 +14,4 @@ The rest of the functionality is in sub-packages:
  * `sensors` - interfaces to sensors go here
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
