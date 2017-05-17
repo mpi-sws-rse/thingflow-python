@@ -10,3 +10,5 @@ import getpass
 POSTGRES_DBNAME='iot'
 POSTGRES_USER=getpass.getuser()
 
+INFLUXDB_USER='root'
+INFLUXDB_PASSWORD=None

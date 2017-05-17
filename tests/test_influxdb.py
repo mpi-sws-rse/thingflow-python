@@ -1,14 +1,32 @@
 # Make sure influxdb is running 
 
+try:
+    from influxdb import InfluxDBClient 
+    from thingflow.adapters.influxdb import InfluxDBWriter,\
+                                            InfluxDBReader
+    PREREQS_AVAILABLE=True
+except ImportError:
+    PREREQS_AVAILABLE = False
+
+try:
+    from config_for_tests import INFLUXDB_USER, INFLUXDB_PASSWORD
+except ImportError:
+    INFLUXDB_USER=None
+    INFLUXDB_PASSWORD=None
+try:
+    from config_for_tests import INFLUXDB_DATABASE
+except ImportError:
+    INFLUXDB_DATABASE='thingflow' # the default
+
 import asyncio
 import datetime, time
 from collections import namedtuple
+import unittest
 
 from utils import ValueListSensor
-from antevents.base import Scheduler, SensorPub, SensorEvent, CallableAsSubscriber
+from thingflow.base import Scheduler, SensorAsOutputThing, \
+    SensorEvent, CallableAsInputThing
 
-from antevents.adapters.influxdb import InfluxDBWriter, InfluxDBReader
-from influxdb import InfluxDBClient 
 
 
 Sensor = namedtuple('Sensor', ['series_name', 'fields', 'tags'])
@@ -21,31 +39,54 @@ value_stream2 = [2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 
                  6, 2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 6,
                  6, 2, 3, 2, 2, 9, 9, 2, 1, 8, 8, 3, 2, 1, 8, 9, 6, 2, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 6]
 
-def test_influx_output():
-    loop = asyncio.get_event_loop()
-    s = ValueListSensor(1, value_stream)
-    p = SensorPub(s)
-    b = InfluxDBWriter(msg_format=Sensor(series_name='Sensor', fields=['val', 'ts'], tags=['sensor_id']), generate_timestamp=False)
-    p.subscribe(b)
- 
-    scheduler = Scheduler(loop)
-    scheduler.schedule_periodic(p, 0.2) # sample five times every second
-    scheduler.run_forever()
+@unittest.skipUnless(PREREQS_AVAILABLE,
+                     "influxdb client library not installed")
+@unittest.skipUnless(INFLUXDB_USER is not None,
+                     "Influxdb not configured in config_for_tests.py")
+class TestInflux(unittest.TestCase):
+    def test_influx_output(self):
+        loop = asyncio.get_event_loop()
+        s = ValueListSensor(1, value_stream)
+        p = SensorAsOutputThing(s)
+        b = InfluxDBWriter(msg_format=Sensor(series_name='Sensor', fields=['val', 'ts'], tags=['sensor_id']),
+                           generate_timestamp=False,
+                           username=INFLUXDB_USER,
+                           password=INFLUXDB_PASSWORD,
+                           database=INFLUXDB_DATABASE)
+        p.connect(b)
 
-    # Now play back
-    c = InfluxDBClient(database='antevents')
-    rs = c.query('SELECT * FROM Sensor;').get_points()
-    for d in rs: 
-        print(d)
+        scheduler = Scheduler(loop)
+        scheduler.schedule_periodic(p, 0.2) # sample five times every second
+        scheduler.run_forever()
 
-    # Play back using a publisher
-    p = InfluxDBReader('SELECT * FROM Sensor;')
-    p.subscribe(CallableAsSubscriber(print))
+        # Now play back
+        rs = self.c.query('SELECT * FROM Sensor;').get_points()
+        for d in rs: 
+            print(d)
 
-    scheduler = Scheduler(loop)
-    scheduler.schedule_periodic(p, 0.2) # sample five times every second
-    scheduler.run_forever()
-    print("That's all folks")
-    
-if __name__ == "__main__":
-    test_influx_output()
+        # Play back using an output thing
+        p = InfluxDBReader('SELECT * FROM Sensor;',
+                           database=INFLUXDB_DATABASE,
+                           username=INFLUXDB_USER,
+                           password=INFLUXDB_PASSWORD)
+        p.connect(CallableAsInputThing(print))
+
+        scheduler = Scheduler(loop)
+        scheduler.schedule_periodic(p, 0.2) # sample five times every second
+        scheduler.run_forever()
+        print("That's all folks")
+
+    def setUp(self):
+        self.c = InfluxDBClient(database=INFLUXDB_DATABASE,
+                                username=INFLUXDB_USER,
+                                password=INFLUXDB_PASSWORD)
+        self.c.delete_series(measurement='Sensor')
+        #self.c.query('DELETE from Sensor;')
+        
+    def tearDown(self):
+        self.c.delete_series(measurement='Sensor')
+        #self.c.query('DELETE from Sensor;')
+        
+        
+if __name__ == '__main__':
+    unittest.main()

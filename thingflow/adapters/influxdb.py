@@ -1,7 +1,3 @@
-"""
-NOTE: This is example code which has not been tested.
-TODO: Write automated tests for this code.
-"""
 import datetime
 from influxdb import InfluxDBClient, SeriesHelper
 
