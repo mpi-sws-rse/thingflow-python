@@ -228,6 +228,15 @@ class OutputThing:
             self.__connections__[output_port] = new_connections
         return disconnect
 
+    def _has_connections(self):
+        """Used by the scheduler to see the thing has any more outgoing connections.
+        If a scheduled thing no longer has output connections, it is descheduled.
+        """
+        for (port, conns) in self.__connections__.items():
+            if len(conns)>0:
+                return True
+        return False
+    
     def _schedule(self, enqueue_fn):
         """This method is used by the scheduler to specify an enqueue function
         to be called
@@ -333,10 +342,7 @@ class OutputThing:
         def has_connections(thing):
             if not hasattr(thing, '__connections__'):
                 return False
-            for port in thing.__connections__.keys():
-                if len(thing.__connections__[port])>0:
-                    return True
-            return False
+            return thing._has_connections()
         def print_from(current_seq, thing):
             if has_connections(thing):
                 for (port, connections) in thing.__connections__.items():
@@ -363,10 +369,7 @@ class OutputThing:
         def has_connections(thing):
             if not hasattr(thing, '__connections__'):
                 return False
-            for port in thing.__connections__.keys():
-                if len(thing.__connections__[port])>0:
-                    return True
-            return False
+            return thing._has_connections()
         def fmt(thing, port):
             return '%s.%s' % (str(thing), port) if port!='default' \
                 else str(thing)
@@ -987,7 +990,7 @@ class _ThreadForBlockingOutputThing(threading.Thread):
                     break
                 start = time.time()
                 self.output_thing._observe()
-                if len(self.output_thing.__connections__)==0:
+                if self.output_thing._has_connections():
                     break
                 time_left = self.interval - (time.time() - start)
                 if time_left > 0 and (not self.stop_requested):
@@ -1057,7 +1060,7 @@ class Scheduler:
         def run():
             assert output_thing in self.active_schedules
             output_thing._observe()
-            more = len(output_thing.__connections__)>0
+            more = output_thing._has_connections()
             if not more and output_thing in self.active_schedules:
                 self._remove_from_active_schedules(output_thing)
             elif output_thing in self.active_schedules:
@@ -1089,9 +1092,11 @@ class Scheduler:
         return self.schedule_periodic(output_thing, interval)
     
     def schedule_recurring(self, output_thing):
-        """Takes a DirectOutputThingMixin and calls _observe() to get events. If
-        _observe() returns True, the task is requeued on the event queue. This
-        variant is useful for something like an iterable. If the call to get
+        """Takes a DirectOutputThingMixin and calls _observe() to get events. If,
+        after the call, there are no downstream connections, the scheduler will
+        deschedule the output thing.
+
+        This variant is useful for something like an iterable. If the call to get
         the next event would block, don't use this! Instead, one of the calls
         that runs in a separate thread (e.g. schedule_recuring_separate_thread()
         or schedule_periodic_separate_thread()).
@@ -1111,7 +1116,7 @@ class Scheduler:
         def run():
             assert output_thing in self.active_schedules
             output_thing._observe()
-            more = len(output_thing.__connections__)>0
+            more = output_thing._has_connections()
             if not more and output_thing in self.active_schedules:
                 self._remove_from_active_schedules(output_thing)
             elif output_thing in self.active_schedules:
