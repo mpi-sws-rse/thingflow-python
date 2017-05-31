@@ -1,6 +1,6 @@
 .. _reference:
 
-8. ThingFlow-Python API Reference
+9. ThingFlow-Python API Reference
 =================================
 
 .. automodule:: thingflow
@@ -142,6 +142,7 @@ in the ThingFlow-Python distirbution:
 * ``mqtt`` - interface to MQTT via ``paho.mqtt``
 * ``mqtt_async`` - interface to MQTT via ``hbmqtt``
 * ``pandas`` - convert ThingFlow events to Pandas ``Series`` data arrays
+* ``predix`` - send and query data with the GE Predix Time Series API
 * ``postgres`` - interface to the PostgreSQL database
 * ``rpi.gpio`` - output on the Raspberry Pi GPIO pins
 

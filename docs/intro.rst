@@ -151,7 +151,9 @@ directory) is as follows:
 
 More Examples
 -------------
-There is also a separate repository with larger ThingFlow examples. It is at
+Additional can be found throughout this document, particularly in
+:ref:`Section 6: More Examples <more-examples>`.
+There is also a separate repository with larger ThingFlow applications. It is at
 https://github.com/mpi-sws-rse/thingflow-examples. This repository includes an automated
 lighting application and a vehicle traffic analysis.
 

@@ -1,6 +1,6 @@
 .. _design:
 
-7. Design Notes
+8. Design Notes
 ===============
 
 This section describes some design decisions in the ThingFlow API

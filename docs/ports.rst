@@ -180,7 +180,6 @@ complete code):
                     return
             self._dispatch_next(x, port='default') # fallthrough case
 
-A example application using this dispatcher along with other instances of
-port mapping may be found at ``examples/solar_heater_example.py``.
+We will use this dispatcher within a larger example in the subsection :ref:`solar-water-heater`.
 
 

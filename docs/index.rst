@@ -14,9 +14,10 @@ local (near the data source) processing.
 The source repository for ThingFlow-python is at https://github.com/mpi-sws-rse/thingflow-python.
 
 Sections 1 and 2 of this documentation cover how to get started. Sections 3
-through 5 cover more advanced topics. Section 6 covers our port of ThingFlow to
-MicroPython on the ESP8266. Section 7 documents some design decisions made during
-the evolution of ThingFlow. Finally, Section 8 contains reference
+through 5 cover more advanced topics. Section 6 provides some more code examples.
+Section 7 covers our port of ThingFlow to
+MicroPython on the ESP8266. Section 8 documents some design decisions made during
+the evolution of ThingFlow. Finally, Section 9 contains reference
 documentation for the full ThingFlow-python API (extracted from the docstrings).
 
 .. [#] *ThingFlow* was originally known as *AntEvents*.
@@ -31,6 +32,7 @@ Contents:
    output_things
    ports
    functional-api
+   more-examples
    micropython
    design-notes
    reference

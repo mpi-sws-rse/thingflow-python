@@ -1,6 +1,6 @@
 .. _micropython_port:
 
-6. ThingFlow-MicroPython Port
+7. ThingFlow-MicroPython Port
 =============================
 This section describes the  port of ThingFlow to MicroPython_, a bare-metal implementation of
 Python 3 for small processors. This port has been tested on the ESP8266_

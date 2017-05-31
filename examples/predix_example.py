@@ -16,7 +16,7 @@ import random
 
 random.seed()
 
-from thingflow.base import InputThing, Scheduler, SensorAsOutputThing
+from thingflow.base import Scheduler, SensorAsOutputThing
 from thingflow.adapters.predix import PredixWriter, PredixReader, EventExtractor
 
 logger = logging.getLogger()
@@ -26,7 +26,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 TEST_SENSOR1 = 'test-sensor-1'
-TEST_SENSOR2 = 'test-sensor-2'
 
 class TestSensor:
     """Generate a random value for the specified number of samples.
@@ -48,17 +47,13 @@ class TestSensor:
 
 def run(args, token):
     sensor1 = TestSensor.output_thing(TEST_SENSOR1, 5)
-    sensor2 = TestSensor.output_thing(TEST_SENSOR2, 5)
     writer = PredixWriter(args.ingest_url, args.predix_zone_id, token,
                           extractor=EventExtractor(attributes={'test':True}),
                           batch_size=3)
     sensor1.connect(writer)
     sensor1.connect(print) # also print the event
-    sensor2.connect(writer)
-    sensor2.connect(print)
     scheduler = Scheduler(asyncio.get_event_loop())
     scheduler.schedule_periodic(sensor1, 0.5)
-    scheduler.schedule_periodic(sensor2, 0.5)
     
     start_time = time.time()
     scheduler.run_forever()
@@ -68,13 +63,8 @@ def run(args, token):
                            TEST_SENSOR1,
                            start_time=start_time,
                            one_shot=True)
-    reader2 = PredixReader(args.query_url, args.predix_zone_id, token, TEST_SENSOR2,
-                           start_time=start_time,
-                           one_shot=True)
     reader1.connect(print)
-    reader2.connect(print)
-    scheduler.schedule_periodic(reader1, 2)
-    scheduler.schedule_periodic(reader2, 2)
+    scheduler.schedule_recurring(reader1)
     scheduler.run_forever()
 
 
