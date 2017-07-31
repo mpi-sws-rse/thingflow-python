@@ -15,6 +15,12 @@ port to Micropython of `python-tsl2591 <https://github.com/maxlklaxl/python-tsl2
 The port has its own github repo at https://github.com/jfischer/micropython-tsl2591.
 The file is included here for convenience.
 
+mcp9808.py
+----------
+A sensor for the MCP9808 temperature sensor breakout board from Adafuit. This
+is a port to MicroPython of
+`Adafruit-MCP9808 <https://github.com/adafruit/Adafruit_Python_MCP9808/>`__.
+
 adxl345_upy.py
 --------------
 Sensor for ADXL345 digital accelerometer. The python library is originally from

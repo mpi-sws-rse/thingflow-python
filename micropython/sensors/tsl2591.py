@@ -72,7 +72,7 @@ SENSOR_ADDRESS=0x29
 class Tsl2591:
     def __init__(
                  self,
-                 sensor_id,
+                 sensor_id='tsl2591',
                  integration=INTEGRATIONTIME_100MS,
                  gain=GAIN_LOW
                  ):
@@ -83,6 +83,9 @@ class Tsl2591:
         self.set_timing(self.integration_time)
         self.set_gain(self.gain)
         self.disable()
+
+    def get_i2c(self):
+        return self.bus.i2c
 
     def set_timing(self, integration):
         self.enable()
