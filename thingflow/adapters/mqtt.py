@@ -1,14 +1,14 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
-import asyncio
 import time
 from collections import namedtuple
-import traceback as tb
 
 try:
     import paho.mqtt.client as paho
 except ImportError:
     print("could not import paho.mqtt.client")
+
+import ssl
 
 from thingflow.base import InputThing, OutputThing, EventLoopOutputThingMixin
 
@@ -85,7 +85,7 @@ class MQTTWriter(InputThing):
     def _connect(self):
         if self.server_tls:
             raise Exception("TBD")
-            print(self.client.tls_set(server.server_cert, cert_reqs=ssl.CERT_OPTIONAL))
+            print(self.client.tls_set(self.server_tls.server_cert, cert_reqs=ssl.CERT_OPTIONAL))
             print(self.client.connect(self.host, self.port))
         else:
             self.client.connect(self.host, self.port) 
@@ -161,7 +161,7 @@ class MQTTReader(OutputThing, EventLoopOutputThingMixin):
     def _connect(self):
         if self.server_tls:
             raise Exception("TBD")
-            print(self.client.tls_set(server.server_cert, cert_reqs=ssl.CERT_OPTIONAL))
+            print(self.client.tls_set(self.server_tls.server_cert, cert_reqs=ssl.CERT_OPTIONAL))
             print(self.client.connect(self.host, self.port))
         else:
             self.client.connect(self.host, self.port) 
