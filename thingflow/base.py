@@ -90,7 +90,7 @@ class CallableAsInputThing:
         else:
             def default_error(err):
                 if isinstance(err, FatalError):
-                    raise err
+                    raise err.with_traceback(err.__traceback__)
                 else:
                     logger.error("%s: Received on_error(%s)" %
                                  (self, err))
@@ -261,13 +261,13 @@ class OutputThing:
             port = 'default'
         try:
             connections = self.__connections__[port]
-        except KeyError:
+        except KeyError as e:
             if port in self.__closed_ports__:
                 raise PortAlreadyClosed("Port '%s' on OutputThing %s already had an on_completed or on_error_event" %
                                          (port, self))
             else:
                 raise UnknownPortError("Unknown port '%s' in OutputThing %s" %
-                                        (port, self))
+                                        (port, self)) from e
         if len(connections) == 0:
             return
         enq = self.__enqueue_fn__
@@ -281,20 +281,20 @@ class OutputThing:
             except FatalError:
                 raise
             except Exception as e:
-                raise ExcInDispatch("Unexpected exception when dispatching event '%s' to InputThing %s from OutputThing %s: %s" %
-                                    (x, s, self, e))
+                raise ExcInDispatch("Unexpected exception when dispatching event '%s' to InputThing %s from OutputThing %s" %
+                                    (repr(x), s.input_thing, self)) from e
 
     def _dispatch_completed(self, port=None):
         if port==None:
             port = 'default'
         try:
             connections = self.__connections__[port]
-        except KeyError:
+        except KeyError as e:
             if port in self.__closed_ports__:
                 raise PortAlreadyClosed("Port '%s' on OutputThing %s already had an on_completed or on_error_event" %
                                          (port, self))
             else:
-                raise UnknownPortError("Unknown port '%s' in OutputThing %s" % (port, self))
+                raise UnknownPortError("Unknown port '%s' in OutputThing %s" % (port, self)) from e
         enq = self.__enqueue_fn__
         if enq:
             for s in connections:
@@ -306,8 +306,8 @@ class OutputThing:
             except FatalError:
                 raise
             except Exception as e:
-                raise ExcInDispatch("Unexpected exception when dispatching completed to InputThing %s from OutputThing %s: %s" %
-                                    (s, self, e))
+                raise ExcInDispatch("Unexpected exception when dispatching completed to InputThing %s from OutputThing %s" %
+                                    (s.input_thing, self)) from e
         self._close_port(port)
 
     def _dispatch_error(self, e, port=None):
@@ -315,12 +315,12 @@ class OutputThing:
             port = 'default'
         try:
             connections = self.__connections__[port]
-        except KeyError:
+        except KeyError as e:
             if port in self.__closed_ports__:
                 raise PortAlreadyClosed("Port '%s' on OutputThing %s already had an on_completed or on_error_event" %
                                          (port, self))
             else:
-                raise UnknownPortError("Unknown port '%s' in OutputThing %s" % (port, self))
+                raise UnknownPortError("Unknown port '%s' in OutputThing %s" % (port, self)) from e
         enq = self.__enqueue_fn__
         if enq:
             for s in connections:
@@ -332,8 +332,8 @@ class OutputThing:
             except FatalError:
                 raise
             except Exception as e:
-                raise ExcInDispatch("Unexpected exception when dispatching error '%s' to InputThing %s from OutputThing %s: %s" %
-                                    (e, s, self, e))
+                raise ExcInDispatch("Unexpected exception when dispatching error '%s' to InputThing %s from OutputThing %s" %
+                                    (repr(e), s.input_thing, self)) from e
         self._close_port(port)
 
     def print_downstream(self):
@@ -433,7 +433,7 @@ class OutputThing:
         print("*"*len(h1))
 
     def __str__(self):
-        return self.__class__.__name__ + '()'
+        return  self.__class__.__name__ + '()'
                 
 
 class Filter(OutputThing, InputThing):
@@ -748,7 +748,7 @@ class IterableAsOutputThing(OutputThing, DirectOutputThingMixin):
         if hasattr(self, 'name') and self.name:
             return self.name
         else:
-            super().__str__()
+            return super().__str__()
            
 def from_iterable(i):
     return IterableAsOutputThing(i)
@@ -955,7 +955,7 @@ class _ThreadForBlockingInputThing(threading.Thread):
             self.input_thing.thread = None # disassociate this thread
             def die(): # need to stop the scheduler in the main loop
                 del self.scheduler.active_schedules[self.input_thing]
-                raise ScheduleError(msg)
+                raise ScheduleError(msg) from e
             self.scheduler.event_loop.call_soon_threadsafe(die)
         else:
             self.input_thing._close()
@@ -996,12 +996,11 @@ class _ThreadForBlockingOutputThing(threading.Thread):
                 if time_left > 0 and (not self.stop_requested):
                     time.sleep(time_left)
         except Exception as e:
-            msg = "_observe for %s exited with error: %s" % \
-                  (self.output_thing, e)
+            msg = "_observe for %s exited with error" % self.output_thing
             logger.exception(msg)
             def die(): # need to stop the scheduler in the main loop
                 del self.scheduler.active_schedules[self.output_thing]
-                raise ScheduleError(msg)
+                raise ScheduleError(msg) from e
             self.scheduler.event_loop.call_soon_threadsafe(die)
         else:
             def done():
@@ -1031,7 +1030,7 @@ class Scheduler:
         def exception_handler(loop, context):
             assert loop==self.event_loop
             loop.default_exception_handler(context)
-            self.fatal_error = context['message']
+            self.fatal_error = context['exception']
             self.stop()
         self.event_loop.set_exception_handler(exception_handler)
 
@@ -1156,12 +1155,11 @@ class Scheduler:
                 # ok, lets run the event loop
                 output_thing._observe_event_loop()
             except Exception as e:
-                msg = "Event loop for %s exited with error: %s" % \
-                                 (output_thing, e)
+                msg = "Event loop for %s exited with error" % output_thing
                 logger.exception(msg)
                 def die(): # need to stop the scheduler in the main loop
                     del self.active_schedules[output_thing]
-                    raise ScheduleError(msg)
+                    raise ScheduleError(msg) from e
                 self.event_loop.call_soon_threadsafe(die)
             else:
                 def loop_done():
@@ -1237,8 +1235,8 @@ class Scheduler:
                   ', '.join([('%s'%o) for o in self.active_schedules.keys()]))
             raise
         if self.fatal_error is not None:
-            raise ScheduleError("Scheduler aborted due to fatal error: %s" %
-                                self.fatal_error)
+            raise ScheduleError("Scheduler aborted due to fatal error") \
+                from self.fatal_error
 
     def _schedule_coroutine(self, coro, done_callback):
         """This is for low-level components that deal directly with
@@ -1263,7 +1261,7 @@ class Scheduler:
         the event loop.
         """
         for (task, handle) in self.active_schedules.items():
-            print("Stopping %s" % task)
+            #print("Stopping %s" % task)
             # The handles are either event scheduler handles (with a cancel
             # method) or just callables to be called directly.
             if hasattr(handle, 'cancel'):
@@ -1283,13 +1281,11 @@ class Scheduler:
                 def recheck_stop(f):
                     exc = f.exception()
                     if exc:
-                        raise FatalError("Exception in coroutine %s: %s" %
-                                         (repr(f), exc))
+                        raise FatalError("Exception in coroutine %s" % repr(f)) from exc
                     else:
                         self.stop()
                 f.add_done_callback(recheck_stop)
                 return
             elif f.exception():
-                raise FatalError("Exception in coroutine %s: %s" %
-                                 (repr(f), f.exception()))
+                raise FatalError("Exception in coroutine %s" %  repr(f)) from exc
         self.event_loop.stop()

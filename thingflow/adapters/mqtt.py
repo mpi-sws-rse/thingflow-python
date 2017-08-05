@@ -3,6 +3,7 @@
 import asyncio
 import time
 from collections import namedtuple
+import traceback as tb
 
 try:
     import paho.mqtt.client as paho
@@ -57,6 +58,8 @@ class MockMQTTClient(object):
 class MQTTWriter(InputThing):
     """Subscribes to internal events and pushes them out to MQTT.
     The topics parameter is a list of (topic, qos) pairs.
+
+    Events should be serialized before passing them to the writer.
     """
     def __init__(self, host, port=1883, client_id="", client_username="", client_password=None, server_tls=False, server_cert=None, topics=[], mock_class=None):
         self.host = host
@@ -98,13 +101,15 @@ class MQTTWriter(InputThing):
 
 
     def on_next(self, msg):
+        """Note that the message is passed directly to paho.mqtt.client. As such,
+        it must be a string, a bytearray, an int, a float or None. Usually, you would
+        use something like to_json (in thingflow.filters.json) to do the
+        serialization of events.
+        """
         # publish the message to the topics
         retain = msg.retain if hasattr(msg, 'retain') else False
         for (topic, qos) in self.topics:
-            try:
-                self.client.publish(topic, msg, qos, retain) 
-            except ValueError:
-                print("ValueError raised for topic %s: msg %s" % (topic, msg))
+            self.client.publish(topic, msg, qos, retain) 
 
     def on_error(self, e):
         self.client.disconnect()
