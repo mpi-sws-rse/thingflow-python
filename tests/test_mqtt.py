@@ -23,7 +23,7 @@ import sys
 import thingflow.filters.output
 import thingflow.filters.json
 import thingflow.filters.select
-from thingflow.base import Scheduler, InputThing, SensorEvent
+from thingflow.base import Scheduler, InputThing, SensorEvent, ScheduleError, ExcInDispatch
 from thingflow.adapters.mqtt import MQTTReader, MQTTWriter
 from utils import make_test_output_thing_from_vallist, ValidationInputThing
 
@@ -92,6 +92,44 @@ class TestCase(unittest.TestCase):
         loop.stop()
         self.assertTrue(vs.completed)
         print("that's it")
+
+    def test_daniels_bug(self):
+        """Test bug reported by Daniel (issue #1). If you call the mqtt writer without
+        serializing the message, you should get a fatal error.
+        """
+        import time
+        import asyncio
+        import thingflow.filters.output  # This has output side-effect
+        from thingflow.base import Scheduler, from_list
+        from thingflow.adapters.mqtt import MQTTReader, MQTTWriter
+        from collections import namedtuple
+
+        StripEvent = namedtuple('StripEvent', ['strip_id', 'ts', 'val'])
+
+        strip_events = (
+            StripEvent('strip-1', 1500000000, 50),
+            StripEvent('strip-1', 1500000000, 5),
+            StripEvent('strip-1', 1500000000, 50))
+
+        mqtt = MQTTWriter('localhost', topics=[('strip-data', 0),])
+
+        strip = from_list(strip_events)
+        strip.connect(mqtt)
+        strip.output()
+
+        sched = Scheduler(asyncio.get_event_loop())
+        sched.schedule_periodic(strip, 1.0)
+        try:
+            sched.run_forever()
+        except ScheduleError as e:
+            # verify the cause of the error
+            dispatch_error = e.__cause__
+            self.assertTrue(isinstance(dispatch_error, ExcInDispatch),
+                            "expecting cause to be a dispatch error, instead got %s" % repr(dispatch_error))
+            orig_error = dispatch_error.__cause__
+            self.assertTrue(isinstance(orig_error, TypeError),
+                            "expecting original exception to be a TypeError, intead got %s" % repr(orig_error))
+            print("Got expected exception: '%s'" % e)
 
 if __name__ == '__main__':
     unittest.main()
