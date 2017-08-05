@@ -8,7 +8,7 @@ specific IterableAsOutputThing code.
 import asyncio
 import unittest
 
-from thingflow.base import Scheduler
+from thingflow.base import Scheduler, IterableAsOutputThing
 from utils import make_test_output_thing_from_vallist, ValidationInputThing
 import thingflow.filters.where
 import thingflow.filters.output
@@ -37,6 +37,26 @@ def predicate(v):
         print("v=%s, False" % v[2])
         return False
 
+class ErrorIterator:
+    """An iterator that thows an error after the initial stream
+    (instead of StopIteration).
+    """
+    def __init__(self, expected_stream):
+        self.expected_stream = expected_stream
+        self.idx = 0
+
+    def __iterator__(self):
+        return self
+
+    def __next__(self):
+        if self.idx==len(self.expected_stream):
+            raise Exception("Throwing an exception in ErrorIterator")
+        else:
+            v = self.expected_stream[self.idx]
+            self.idx += 1
+            return v
+
+        
 class TestIterableAsOutputThing(unittest.TestCase):
     def test_where(self):
         s = make_test_output_thing_from_vallist(1, value_stream)
@@ -53,6 +73,17 @@ class TestIterableAsOutputThing(unittest.TestCase):
         self.assertTrue(vo.completed)
         print("That's all folks")
 
+    def test_error_handling(self):
+        """This is a non-fatal error, so we should just print the error and
+        exit cleanly without propagating the exception.
+        """
+        s = IterableAsOutputThing(ErrorIterator(expected_stream))
+        s.output()
+        scheduler = Scheduler(asyncio.get_event_loop())
+        scheduler.schedule_periodic(s, 0.5) # sample twice every second
+        s.print_downstream()
+        scheduler.run_forever()
+        
 
 if __name__ == '__main__':
     unittest.main()

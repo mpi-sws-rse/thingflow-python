@@ -34,6 +34,7 @@ from collections import namedtuple
 import threading
 import time
 import queue
+import traceback as tb
 import logging
 logger = logging.getLogger(__name__)
 
@@ -725,7 +726,6 @@ class IterableAsOutputThing(OutputThing, DirectOutputThingMixin):
     def _observe(self):
         try:
             event = self.iterable.__next__()
-            self._dispatch_next(event)
         except StopIteration:
             self._close()
             self._dispatch_completed()
@@ -733,8 +733,14 @@ class IterableAsOutputThing(OutputThing, DirectOutputThingMixin):
             self._close()
             raise
         except Exception as e:
+            # If the iterable throws an exception, we treat it as non-fatal.
+            # The error is dispatched downstream and the connection closed.
+            # If other sensors are running, things will continue.
+            tb.print_exc()
             self._close()
             self._dispatch_error(e)
+        else:
+            self._dispatch_next(event)
 
     def _close(self):
         """This method is called when we stop the iteration, either due to
@@ -1029,7 +1035,6 @@ class Scheduler:
         # break out of the event loop if we get an unexpected error.
         def exception_handler(loop, context):
             assert loop==self.event_loop
-            loop.default_exception_handler(context)
             self.fatal_error = context['exception']
             self.stop()
         self.event_loop.set_exception_handler(exception_handler)
