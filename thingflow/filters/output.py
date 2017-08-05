@@ -1,6 +1,7 @@
 # Copyright 2016 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
 from sys import stdout
+import traceback as tb
 
 from thingflow.base import OutputThing, XformOrDropFilter, filtermethod
 
@@ -14,7 +15,10 @@ class Output(XformOrDropFilter):
         return x
 
     def on_error(self, e):
-        print(e, file=self.file)
+        if hasattr(e, '__traceback__'):
+            tb.print_exception(type(e), e, e.__traceback__, file=self.file)
+        else:
+            print(e, file=self.file)
         self._dispatch_error(e)
 
     def __str__(self):

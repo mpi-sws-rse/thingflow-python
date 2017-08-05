@@ -59,8 +59,10 @@ def is_broker_running():
     import subprocess
     rc = subprocess.call("netstat -an | grep %d" % MQTT_PORT, shell=True)
     if rc==0:
+        print("MQTT broker running")
         return True
     else:
+        print("MQTT broker not running")
         return False
 
 

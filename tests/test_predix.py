@@ -8,7 +8,6 @@ import time
 import asyncio
 import unittest
 from thingflow.base import InputThing, Scheduler
-from thingflow.adapters.predix import *
 from utils import make_test_output_thing_from_vallist
 
 try:
@@ -23,6 +22,7 @@ except ImportError:
 try:
     import websocket
     import requests
+    from thingflow.adapters.predix import *
     PREREQS_AVAILABLE = True
 except ImportError:
     PREREQS_AVAILABLE = False
@@ -67,6 +67,11 @@ class TestInput(InputThing):
 TEST_SENSOR1 = 'test-sensor-1'
 TEST_SENSOR2 = 'test-sensor-2'
 
+@unittest.skipUnless(PREREQS_AVAILABLE,
+                     "Predix prequisites not available")
+@unittest.skipUnless(PREDIX_TOKEN is not None and PREDIX_ZONE_ID is not None and\
+                     PREDIX_INGEST_URL is not None and PREDIX_QUERY_URL is not None,
+                     "Predix not configured in config_for_tests.py")
 class TestPredix(unittest.TestCase):
     def test_batching(self):
         """We write out a set of event from two simulated sensors using an odd batch size (3).
