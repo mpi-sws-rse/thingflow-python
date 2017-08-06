@@ -27,3 +27,8 @@ Sensor for ADXL345 digital accelerometer. The python library is originally from
 https://github.com/pimoroni/adxl345-python with edits for Micropython (that does
 not have the smbus module) and Python 3 (print statement).
 
+adc_esp8266.py
+--------------
+Analog to digital sensor for the esp8266 microcontroller. Original
+implementation from https://github.com/mzdaniel/micropython-iot
+The file is included here for convenience.
