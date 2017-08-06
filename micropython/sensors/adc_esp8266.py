@@ -7,7 +7,7 @@
 from machine import ADC
 
 class ADCSensor:
-    def __init__(self, sensor_id='', min_rd=0, max_rd=1024,
+    def __init__(self, sensor_id='adc', min_rd=0, max_rd=1024,
                  min_val=0, max_val=1):
         '''Initialize sensor
 
@@ -36,3 +36,6 @@ class ADCSensor:
         '''
         reading = self.read()
         return self.min_val + (reading - self.min_rd) * self.coef
+
+    def __repr__(self):
+        return "ADCSensor('%s')" % self.sensor_id
