@@ -19,13 +19,19 @@ class NeoPixelWriter:
         pin = Pin(pinno, Pin.OUT)
         self.np = NeoPixel(pin, num_pixels, bpp=bytes_per_pixel)
         self.bytes_per_pixel = bytes_per_pixel
+        self.tuple_len = bytes_per_pixel+1
 
     def on_next(self, x):
         """The event should be a tuple/list where the first element
-        is the pixel number and the rest are the settings for that pixel.
+        is the pixel number and the rest are the settings for that pixel
+        OR it can be a standard (sensor_id, ts, event) tuple, where the control
+        message is in the third element.
         """
-        assert len(x)==(self.bytes_per_pixel+1),\
-            "expecting a tuple of length %d" % (self.bytes_per_pixel+1)
+        if len(x)==3 and (isinstance(x[2], tuple) or isinstance(x[2], list)) and \
+           len(x[2])==self.tuple_len:
+            x = x[2] # the control message is embedded in a standard triple
+        elif len(x)!=self.tuple_len:
+            raise Exception("expecting a tuple of length %d" % self.tuple_len)
         pixel = x[0]
         self.np[pixel] = x[1:]
         self.np.write()

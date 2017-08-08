@@ -58,7 +58,7 @@ class OutputThing:
         except FatalError:
             raise
         except Exception as e:
-            raise ExcInDispatch(e)
+            raise ExcInDispatch('dispatching event %s: %s' % (repr(x), repr(e)))
 
     def _dispatch_completed(self, port=None):
         if port==None:
