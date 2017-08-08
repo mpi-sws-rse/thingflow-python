@@ -1,4 +1,4 @@
-# Copyright 2016 by MPI-SWS and Data-Ken Research.
+# Copyright 2016, 2017 by MPI-SWS and Data-Ken Research.
 # Licensed under the Apache 2.0 License.
 """
 This is the main package for antevents. Directly within this package you fill
@@ -14,4 +14,4 @@ The rest of the functionality is in sub-packages:
  * `sensors` - interfaces to sensors go here
 """
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
